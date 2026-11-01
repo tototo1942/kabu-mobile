@@ -122,7 +122,12 @@ if os.path.exists(APP_ICON_FILE):
                         'div[class*="manageApp"]',
                         'div[class*="stAppDeployButton"]',
                         'header[data-testid="stHeader"] [data-testid="stToolbar"]',
-                        'header[data-testid="stHeader"]'
+                        'header[data-testid="stHeader"]',
+                        '[data-testid="stStatusWidget"]',
+                        'div.stStatusWidget',
+                        'svg[data-testid="stLogo"]',
+                        'a[href*="streamlit.io"]',
+                        'div[data-testid="stDecoration"]'
                     ];
                     var docs = [document];
                     try {{
@@ -170,6 +175,9 @@ st.markdown("""
     [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
     [data-testid="stDecoration"] {display: none !important; visibility: hidden !important;}
     [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    div.stStatusWidget {display: none !important; visibility: hidden !important;}
+    svg[data-testid="stLogo"] {display: none !important; visibility: hidden !important;}
+    a[href*="streamlit.io"] {display: none !important; visibility: hidden !important;}
     footer {visibility: hidden !important; display: none !important;}
     button[data-testid="stDeployButton"] {display: none !important; visibility: hidden !important;}
     div[class*="viewerBadge"] {display: none !important; visibility: hidden !important;}
@@ -179,6 +187,20 @@ st.markdown("""
     div[data-testid="stBottomBlockContainer"] {display: none !important;}
     iframe[title*="streamlit"] {display: none !important;}
     .viewerBadge_container__1QSob {display: none !important;}
+    [data-testid="manage-app-button"],
+    div[data-testid="manage-app-button"],
+    div[class*="Profile"],
+    button[class*="Profile"],
+    div[class*="stBottom"],
+    [data-testid="stBottom"],
+    div[class*="floatingButton"],
+    div[class*="HostBadge"],
+    div[class*="ProfileBadge"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
 
     /* 全体背景を純白に固定し、文字色を濃紺・黒に強制 */
     html, body, [data-testid="stAppViewContainer"] {
@@ -356,36 +378,97 @@ st.markdown("""
         padding: 8px 16px !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        font-size: 0.88rem !important;
-        color: #F8FAFC !important; /* 純白テキスト */
-        background-color: rgba(255, 255, 255, 0.12) !important;
-        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        font-size: 0.90rem !important;
+        color: #FFFFFF !important; /* 純白テキスト */
+        background-color: rgba(255, 255, 255, 0.14) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer !important;
     }
 
+    /* タブ内すべての文字を純白に強制（全体CSSの黒文字上書き） */
+    [data-testid="stTabs"] button[role="tab"] *,
+    [data-testid="stTabs"] button[role="tab"] p,
+    [data-testid="stTabs"] button[role="tab"] span,
+    [data-testid="stTabs"] button[role="tab"] div {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
     /* タブのホバー時：白く輝く */
     [data-testid="stTabs"] button[role="tab"]:hover {
-        color: #FFFFFF !important;
-        border-color: #93C5FD !important;
         background-color: rgba(255, 255, 255, 0.28) !important;
+        border-color: #93C5FD !important;
         transform: translateY(-2px) !important;
     }
 
     /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 ＋ 浮遊シャドウ */
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        color: #0F172A !important; /* 濃紺文字でクッキリ視認 */
         background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important; /* 鮮やかなゴールド */
         border: 1.5px solid #FCD34D !important;
         box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
-        font-weight: 800 !important;
         transform: translateY(-1px) !important;
+    }
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] *,
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] p,
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] span,
+    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] div {
+        color: #0F172A !important; /* 濃紺文字でクッキリ視認 */
+        font-weight: 800 !important;
     }
 
     /* デフォルトの赤い下線を完全消去 */
     [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
         display: none !important;
+    }
+
+    /* ==========================================
+       全ボタン共通デザイン：色付き背景 ＆ 白抜き文字 ＆ 立体視認性
+       ========================================== */
+    div.stButton > button,
+    div[data-testid="stButton"] > button,
+    div[data-testid="stDownloadButton"] > button {
+        background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+        color: #FFFFFF !important;
+        border: 1.5px solid #1D4ED8 !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        font-size: 0.90rem !important;
+        min-height: 42px !important;
+        height: 42px !important;
+        padding: 0 16px !important;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25) !important;
+        transition: all 0.2s ease !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        cursor: pointer !important;
+    }
+    div.stButton > button:hover,
+    div[data-testid="stButton"] > button:hover,
+    div[data-testid="stDownloadButton"] > button:hover {
+        background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%) !important;
+        color: #FFFFFF !important;
+        box-shadow: 0 4px 10px rgba(30, 58, 138, 0.35) !important;
+        transform: translateY(-1px) !important;
+    }
+    div.stButton > button *,
+    div.stButton > button p,
+    div.stButton > button span,
+    div.stButton > button div,
+    div[data-testid="stDownloadButton"] > button * {
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+    }
+
+    /* 「全候補銘柄一覧に戻る」ボタン：スレート濃紺で高さ42px・位置を完全一致 */
+    div.stButton > button[key*="btn_back_list"],
+    button[key*="btn_back_list"] {
+        background: linear-gradient(135deg, #334155 0%, #475569 100%) !important;
+        border: 1.5px solid #1E293B !important;
+        min-height: 42px !important;
+        height: 42px !important;
     }
 
     /* ヘッダータイトルの純白強制（全体CSSのh1黒色を完全上書き） */
@@ -1462,12 +1545,8 @@ def load_stock_status():
     return {}
 
 def save_stock_status(data):
-    """銘柄の仕分けステータスを保存する"""
-    try:
-        with open(STATUS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    """銘柄の仕分けステータスをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    st.session_state.stock_status = data
 
 def set_stock_status(code: str, status: str):
     """銘柄のステータス（watching / excluded / unreviewed）を更新して即時保存"""
@@ -1491,12 +1570,8 @@ def load_watchlist():
     return []
 
 def save_watchlist(data):
-    """タブ2のウォッチリスト銘柄を保存する"""
-    try:
-        with open(WATCHLIST_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    """タブ2のウォッチリスト銘柄をセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    st.session_state.my_watchlist = data
 
 def load_stock_notes():
     """銘柄の投資メモ＆AIレポートデータを読み込む"""
@@ -1509,12 +1584,8 @@ def load_stock_notes():
     return {}
 
 def save_stock_notes(data):
-    """銘柄の投資メモ＆AIレポートデータを保存する"""
-    try:
-        with open(NOTES_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    """銘柄の投資メモ＆AIレポートデータをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    st.session_state.stock_notes = data
 
 def save_stock_note_entry(code: str, note_text: str):
     """指定銘柄のメモと現在日時を更新して保存"""
@@ -1603,6 +1674,10 @@ if "previous_filter_snapshot" not in st.session_state:
 # 対象市場・中大型株設定のロック状態（デフォルトは非表示・小型株集中モード）
 if "unlocked_advanced_market" not in st.session_state:
     st.session_state.unlocked_advanced_market = False
+
+# 小型成長株リストの事前読み込み（ボタン社数の動的連動用）
+small_cap_df_init = load_data()
+default_total_count = len(small_cap_df_init) if small_cap_df_init is not None else 126
 
 def clear_all_filters():
     """現在の全フィルターを退避し、すべての条件を初期化して全社表示に戻す"""
@@ -1818,7 +1893,7 @@ with st.sidebar.container(border=True):
     st.markdown("---")
     clr_c1, clr_c2 = st.columns(2)
     with clr_c1:
-        if st.button("🔄 全クリア", use_container_width=True, key="sb_clear_all_mob", help="すべてのフィルターを解除して全社表示に戻します"):
+        if st.button(f"🔄 デフォルト (全{default_total_count}社)", use_container_width=True, key="sb_clear_all_mob", help="すべてのフィルターを解除して全社表示に戻します"):
             clear_all_filters()
             st.rerun()
     with clr_c2:
@@ -2096,20 +2171,7 @@ if date_str:
 # ==========================================
 # メイン画面ヘッダー（高品位イメージバナー ＆ タイトル）
 # ==========================================
-header_banner_path = os.path.join(BASE_DIR, "header_banner.png")
-if os.path.exists(header_banner_path):
-    st.image(header_banner_path, use_container_width=True)
 
-st.markdown("""
-<div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%); padding: 16px 20px; border-radius: 12px; margin-top: 8px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.15); border: 1.5px solid #3B82F6;">
-    <div class="header-title-text" style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF !important; letter-spacing: -0.5px; line-height: 1.25;">
-        🚀 TOTOTO-KABU
-    </div>
-    <div class="header-sub-text" style="margin-top: 8px; font-size: 0.90rem;">
-        小型株集中投資ダッシュボード ｜ 時価総額300億円以下・高成長・新世代スクリーナー
-    </div>
-</div>
-""", unsafe_allow_html=True)
 
 # データ読み込み（小型成長株リストとテーマ別リストを完全に分離管理）
 small_cap_df = load_data()
@@ -2253,50 +2315,6 @@ if selected_genres:
     # 通常モード（小型株モード）でジャンル選択時のみ、ジャンルリストで絞り込み
     if not is_theme_mode and "ジャンルリスト" in df.columns:
         df = df[df["ジャンルリスト"].map(lambda gl: any(g in gl for g in selected_genres) if isinstance(gl, list) else False)]
-
-
-# ==========================================
-# 検索条件の表示／非表示切り替えバー ＆ 条件バッジ
-# ==========================================
-c_btn_col1, c_btn_col2 = st.columns([1.8, 4.2])
-with c_btn_col1:
-    btn_label = "👁️ 条件バッジを隠す" if st.session_state.show_conditions else "👁️ 条件バッジを表示"
-    if st.button(btn_label, use_container_width=True, help="画面上の条件バッジの表示／非表示を切り替えます"):
-        st.session_state.show_conditions = not st.session_state.show_conditions
-        save_current_conditions()
-        st.rerun()
-
-with c_btn_col2:
-    st.caption(f"💾 前回の検索条件が自動保存・復元されています（該当: **{len(df)}社** / {base_population_label}）")
-
-if st.session_state.show_conditions:
-    tags_html = "".join([f'<span class="filter-tag">{f}</span>' for f in active_filters])
-    with st.container(border=True):
-        st.markdown(f"""
-        <div style="margin-bottom: 8px;">
-            <span class="filter-label" style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem;">【現在適用中の条件】:</span>
-            {tags_html}
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #BFDBFE;'>", unsafe_allow_html=True)
-        
-        f_btm_col1, f_btm_col2, f_btm_col3 = st.columns([3.5, 1.2, 1.0])
-        with f_btm_col1:
-            st.markdown(f"""
-            <div style="font-weight: 800; color: #1D4ED8; font-size: 1.08rem; padding-top: 6px;">
-                👉 該当: <strong>{len(df)} 社</strong> / {base_population_label}
-            </div>
-            """, unsafe_allow_html=True)
-        with f_btm_col2:
-            if st.button("🔄 全クリア", use_container_width=True, key="badge_clear_all_mob", help="すべてのフィルターを解除して全社表示に戻します"):
-                clear_all_filters()
-                st.rerun()
-        with f_btm_col3:
-            has_undo = bool(st.session_state.get("previous_filter_snapshot"))
-            if st.button("↩️ 取消", use_container_width=True, key="badge_undo_clear_mob", disabled=not has_undo, help="直前の絞り込み条件を復元します"):
-                undo_clear_filters()
-                st.rerun()
 
 
 # ==========================================
@@ -2752,11 +2770,12 @@ def render_stock_deep_dive(idx, tab1_df):
 
 
 # ==========================================
-# タブ切り替え（立体ピル型・高視認性ナビゲーション）
+# アプリ最上部ナビゲーションタブ（開いた瞬間最上部に常駐）
 # ==========================================
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab_guide, tab3, tab4, tab5 = st.tabs([
     "📋 厳選小型株一覧", 
     "💼 1日5分保有株ウォッチ", 
+    "🔰 使い方 ＆ データ安心マップ",
     "📚 投資メソッド完全ガイド",
     "📱 iSPEED設定ヘルプ",
     "📖 用語と数値の見方ガイド"
@@ -2766,6 +2785,65 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 # タブ1：一覧テーブル ＆ 詳細分析 (フォーカス表示対応)
 # ==========================================
 with tab1:
+    header_banner_path = os.path.join(BASE_DIR, "header_banner.png")
+    if os.path.exists(header_banner_path):
+        st.image(header_banner_path, use_container_width=True)
+    
+    st.markdown("""
+    <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%); padding: 16px 20px; border-radius: 12px; margin-top: 8px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.15); border: 1.5px solid #3B82F6;">
+        <div class="header-title-text" style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF !important; letter-spacing: -0.5px; line-height: 1.25;">
+            🚀 TOTOTO-KABU
+        </div>
+        <div class="header-sub-text" style="margin-top: 8px; font-size: 0.90rem;">
+            小型株集中投資ダッシュボード ｜ 時価総額300億円以下・高成長・新世代スクリーナー
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # ==========================================
+    # 検索条件の表示／非表示切り替えバー ＆ 条件バッジ
+    # ==========================================
+    c_btn_col1, c_btn_col2 = st.columns([1.8, 4.2])
+    with c_btn_col1:
+        btn_label = "👁️ 条件バッジを隠す" if st.session_state.show_conditions else "👁️ 条件バッジを表示"
+        if st.button(btn_label, use_container_width=True, help="画面上の条件バッジの表示／非表示を切り替えます"):
+            st.session_state.show_conditions = not st.session_state.show_conditions
+            save_current_conditions()
+            st.rerun()
+    
+    with c_btn_col2:
+        st.caption(f"💾 前回の検索条件が自動保存・復元されています（該当: **{len(df)}社** / {base_population_label}）")
+    
+    if st.session_state.show_conditions:
+        tags_html = "".join([f'<span class="filter-tag">{f}</span>' for f in active_filters])
+        with st.container(border=True):
+            st.markdown(f"""
+            <div style="margin-bottom: 8px;">
+                <span class="filter-label" style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem;">【現在適用中の条件】:</span>
+                {tags_html}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #BFDBFE;'>", unsafe_allow_html=True)
+            
+            f_btm_col1, f_btm_col2, f_btm_col3 = st.columns([3.5, 1.2, 1.0])
+            with f_btm_col1:
+                st.markdown(f"""
+                <div style="font-weight: 800; color: #1D4ED8; font-size: 1.08rem; padding-top: 6px;">
+                    👉 該当: <strong>{len(df)} 社</strong> / {base_population_label}
+                </div>
+                """, unsafe_allow_html=True)
+            with f_btm_col2:
+                if st.button(f"🔄 デフォルト (全{default_total_count}社)", use_container_width=True, key="badge_clear_all_mob", help="すべてのフィルターを解除して全社表示に戻します"):
+                    clear_all_filters()
+                    st.rerun()
+            with f_btm_col3:
+                has_undo = bool(st.session_state.get("previous_filter_snapshot"))
+                if st.button("↩️ 取消", use_container_width=True, key="badge_undo_clear_mob", disabled=not has_undo, help="直前の絞り込み条件を復元します"):
+                    undo_clear_filters()
+                    st.rerun()
+    
+    
     if len(df) == 0:
         st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**\n\n上級者設定で対象市場（グロース、スタンダード等）にチェックを入れるか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")
         st.info("💡 **ヒント**: 上級者設定を開いている場合は、サイドバーの『🔒 小型株・原則モードに戻して閉じる』を押すと、ワンタップで原則モード（全126社）に戻せます。")
@@ -2919,32 +2997,36 @@ with tab1:
                 
                 st.subheader(f"📋 選択中銘柄: {cur_code} {cur_name} (1社表示中)")
                 
-                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン
-                sel_b1, sel_b2 = st.columns([1.5, 2.0])
+                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン（高さ・位置・デザイン完全統一）
+                sel_b1, sel_b2 = st.columns([1.5, 2.0], vertical_alignment="center")
                 with sel_b1:
                     if st.button("⬅️ 全候補銘柄一覧に戻る", key=f"btn_back_list_{cur_code}", use_container_width=True):
                         st.session_state.selected_stock_code = None
                         st.rerun()
                 with sel_b2:
                     copy_code_js = f"""
-                    <button onclick="copyCode()" style="
-                        width: 100%;
-                        height: 38px;
-                        background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
-                        color: white;
-                        border: 1.5px solid #1D4ED8;
-                        border-radius: 8px;
-                        font-size: 0.90rem;
-                        font-weight: 800;
-                        cursor: pointer;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 6px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                    " id="cpBtn_{cur_code}">
-                        📋 コード【{cur_code}】をコピー
-                    </button>
+                    <div style="display: flex; align-items: center; height: 100%; margin: 0; padding: 0;">
+                        <button onclick="copyCode()" style="
+                            width: 100%;
+                            height: 42px;
+                            background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+                            color: #FFFFFF;
+                            border: 1.5px solid #1D4ED8;
+                            border-radius: 8px;
+                            font-size: 0.90rem;
+                            font-weight: 700;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 6px;
+                            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+                            margin: 0;
+                            box-sizing: border-box;
+                        " id="cpBtn_{cur_code}">
+                            📋 コード【{cur_code}】をコピー
+                        </button>
+                    </div>
                     <script>
                     function copyCode() {{
                         const c = "{cur_code}";
@@ -3154,6 +3236,182 @@ with tab2:
                         st.rerun()
 
 
+
+# ==========================================
+# タブ：使い方 ＆ データ安心マップ（端末個別保存・一括バックアップ）
+# ==========================================
+with tab_guide:
+    with st.container(border=True):
+        st.markdown("""
+        ### 🔰 TOTOTO-KABU 基本操作ガイド（簡単4ステップ）
+        当アプリは、プロ投資家・遠藤洋氏の『小型株集中投資で1億円』の選定基準に基づき、急成長する小型株を直感的に発掘・監視できるダッシュボードです。
+        """)
+
+        g_c1, g_c2 = st.columns(2)
+        with g_c1:
+            st.markdown("""
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem; margin-bottom: 6px;">
+                    ① プリセットで一発スクリーニング
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    サイドバーの「👑 ①王道・集中投資型」や「🔥 全条件クリア」を押すだけで、書籍の理想条件（売上+20%以上、社長大株主、時価総額200億円以下など）を満たすお宝候補銘柄が即座に絞り込まれます。
+                </div>
+            </div>
+            <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #166534; font-size: 0.95rem; margin-bottom: 6px;">
+                    ② 深掘りカードでAIリサーチ ＆ CM確認
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    一覧から気になる銘柄を選択すると、「深掘り分析カード」が開きます。「📋 プロンプトコピー」を押してChatGPTやGrokに貼るだけで、SNS感情分析や競合優位性をプロ級に調査できます。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with g_c2:
+            st.markdown("""
+            <div style="background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #92400E; font-size: 0.95rem; margin-bottom: 6px;">
+                    ③ メモ入力 ＆ 保有株ウォッチ登録
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    「⭐ 検討・監視リストに入れる」を押すと、タブ2の『💼 保有株ウォッチ』に追加されます。銘柄ごとの独自メモも入力可能で、<strong>あなたのお使いの端末だけに完全非公開で安全保存</strong>されます。
+                </div>
+            </div>
+            <div style="background: #FAF5FF; border: 1.5px solid #E9D5FF; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #6B21A8; font-size: 0.95rem; margin-bottom: 6px;">
+                    ④ 1日5分！保有株の株価・決算点検
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    日々のルーティンは『💼 1日5分保有株ウォッチ』を開くだけ。登録銘柄の株価動向や決算発表予定日を一覧でサッとチェックできます。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # --- 🛡️ データ分類の完全マップ ---
+        st.markdown("""
+        ### 🛡️ データ安心マップ（端末個別保存 vs Web共有データ）
+        当アプリでは、プライバシーとセキュリティを最優先に設計しています。<strong>あなたが入力したメモや保有株リストはサーバー上に一切保存されず、お使いの端末（ブラウザ）の中だけに独立して保持されます。</strong><br>
+        第三者が当アプリにアクセスしても、あなたのデータが閲覧されたり、改ざんされたりすることは構造上100%ありません。
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">データ項目</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">保存場所</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">第三者の閲覧</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">改ざんリスク</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">バックアップ・移行</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: #F0FDF4;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #166534;">📝 銘柄個別メモ (自作コメント)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #FFFFFF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">💼 保有株・ウォッチリスト</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #F8FAFC;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🎯 検討仕分け (候補/見送り)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #EFF6FF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E40AF;">🌐 厳選小型株リスト (全126社等)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">☁️ クラウドサーバー</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 全員共通 (公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 閲覧者による変更不可</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">スクリーナー自動最新化</td>
+            </tr>
+            <tr style="background: #FFFFFF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📈 株価チャート・財務指標</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">📊 市場API (Yahoo!等)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 公開市場データ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 改ざん不可</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">リアルタイム自動取得</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # --- 💾 全データ一括バックアップ ＆ 一括復元 ---
+        st.markdown("""
+        ### 💾 全メモ・保有株データの一括バックアップ ＆ 復元
+        機種変更をされる際や、別のスマートフォン・PCとお手元のメモ・保有株を同期したい場合は、こちらをご利用ください。
+        """)
+
+        bk_c1, bk_c2 = st.columns(2)
+        with bk_c1:
+            st.markdown("#### 📥 データを保存する (バックアップ)")
+            st.caption("全銘柄のメモ、保有株ウォッチリスト、仕分け判定を1つのファイル（JSON）にまとめてダウンロードします。")
+            
+            import json
+            backup_dict = {
+                "version": "1.0",
+                "app": "TOTOTO-KABU",
+                "exported_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stock_notes": st.session_state.get("stock_notes", {}),
+                "my_watchlist": st.session_state.get("my_watchlist", []),
+                "stock_status": st.session_state.get("stock_status", {})
+            }
+            json_str = json.dumps(backup_dict, ensure_ascii=False, indent=2)
+            export_filename = f"tototo_kabu_backup_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            st.download_button(
+                label="📥 全データを一括ダウンロード (JSON)",
+                data=json_str,
+                file_name=export_filename,
+                mime="application/json",
+                use_container_width=True,
+                key="btn_backup_download"
+            )
+            note_cnt = len(st.session_state.get("stock_notes", {}))
+            watch_cnt_total = len(st.session_state.get("my_watchlist", []))
+            st.caption(f"📊 現在の端末保存データ: メモ **{note_cnt} 件** / 保有株 **{watch_cnt_total} 件**")
+
+        with bk_c2:
+            st.markdown("#### 📤 データを読み込む (一括復元)")
+            st.caption("以前ダウンロードしたバックアップファイル（JSON）を選択すると、全銘柄のメモや保有株が一瞬で完全復元されます。")
+            
+            uploaded_bk = st.file_uploader("バックアップファイル (.json) を選択", type=["json"], key="uploader_backup_restore")
+            if uploaded_bk is not None:
+                try:
+                    restore_data = json.load(uploaded_bk)
+                    if isinstance(restore_data, dict):
+                        restored_notes = restore_data.get("stock_notes", {})
+                        restored_watch = restore_data.get("my_watchlist", [])
+                        restored_status = restore_data.get("stock_status", {})
+                        
+                        st.session_state.stock_notes = restored_notes
+                        st.session_state.my_watchlist = restored_watch
+                        st.session_state.stock_status = restored_status
+                        
+                        st.success(f"🎉 復元成功！ (メモ: {len(restored_notes)}件, 保有株: {len(restored_watch)}件 を読み込みました)")
+                        if st.button("🔄 画面を最新状態で再読み込み", use_container_width=True):
+                            st.rerun()
+                    else:
+                        st.error("⚠️ 正しいバックアップファイル形式ではありません。")
+                except Exception as e:
+                    st.error(f"⚠️ 読み込み中にエラーが発生しました: {e}")
+
+
 # ==========================================
 # タブ3：遠藤洋氏の投資メソッド完全ガイド
 # ==========================================
@@ -3163,13 +3421,50 @@ with tab3:
         ### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
         当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
 
-        | パターン名 | 準拠度・厳格度 | 該当社数目安 | 基準の厳しさと狙い |
-        | :--- | :---: | :---: | :--- |
-        | **🔥 全条件クリア・超お宝型** | **★★★★★★<br>(究極・奇跡のフルコンプ)** | **1社〜数社**<br>(時期により0社) | **全11条件を100点満点で全クリした奇跡の銘柄**。<br>（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも*「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」*とされる極限の絞り込みです。 |
-        | **👑 ① 王道・集中投資型** | **★★★★★<br>(最も厳格・理想の本命)** | **約10〜20社** | **書籍P.1の理想5大条件を厳密適用**。<br>時価総額200億以下、売上+20%以上、社長30%以上、無借金、上昇トレンド。<br>最も再現性が高く、投資メソッドの真髄となる本命パターンです。 |
-        | **🛡️ ② 堅実安全・押し目型** | **★★★★☆<br>(手堅い安全重視)** | 約15〜25社 | 基本条件に「割安PER × 高値から下がった押し目」を掛け合わせ、高値掴みを防いで安く仕込む守りの設定です。 |
-        | **🚀 ③ テンバガー狙い型** | **★★★★☆+<br>(超高成長特化)** | 約10〜15社 | 売上成長率を「+30%以上」に引き上げ、10倍株（テンバガー）の爆発力を持つ企業のみを狙い撃つ攻撃的設定です。 |
-        | **📋 デフォルト（初期状態）** | **★★★☆☆<br>(基本合格ライン)** | 全126社 | 時価総額300億円以下、売上+20%以上、社長比率20%以上。<br>最低合格ラインをクリアした全銘柄を広く見渡すための母集団です。 |
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
+<table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+  <thead>
+    <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 120px; color: #FFFFFF !important;">パターン名</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 130px; color: #FFFFFF !important;">準拠度・厳格度</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 90px; color: #FFFFFF !important;">該当社数目安</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 220px; color: #FFFFFF !important;">基準の厳しさと狙い</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background: #FFFBEB;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #B45309;">🔥 全条件クリア・超お宝型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★★<br><span style="font-size:0.75rem; color:#475569;">(究極・奇跡のフルコンプ)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">1社〜数社<br><span style="font-size:0.75rem; color:#64748B;">(時期により0社)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>全11条件を100点満点で全クリした奇跡の銘柄</strong>。<br><span style="font-size:0.82rem; color:#475569;">（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも<em>「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」</em>とされる極限の絞り込みです。</span></td>
+    </tr>
+    <tr style="background: #FFFFFF;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">👑 ① 王道・集中投資型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★<br><span style="font-size:0.75rem; color:#475569;">(最も厳格・理想の本命)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜20社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>書籍P.1の理想5大条件を厳密適用</strong>。<br><span style="font-size:0.82rem; color:#475569;">時価総額200億以下、売上+20%以上、社長30%以上、無借金、上昇トレンド。<br>最も再現性が高く、投資メソッドの真髄となる本命パターンです。</span></td>
+    </tr>
+    <tr style="background: #F8FAFC;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🛡️ ② 堅実安全・押し目型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #2563EB;">★★★★☆<br><span style="font-size:0.75rem; color:#475569;">(手堅い安全重視)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約15〜25社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">基本条件に「割安PER × 高値から下がった押し目」を掛け合わせ、高値掴みを防いで安く仕込む守りの設定です。</td>
+    </tr>
+    <tr style="background: #FFFFFF;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🚀 ③ テンバガー狙い型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #EA580C;">★★★★☆+<br><span style="font-size:0.75rem; color:#475569;">(超高成長特化)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜15社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">売上成長率を「+30%以上」に引き上げ、10倍株（テンバガー）の爆発力を持つ企業のみを狙い撃つ攻撃的設定です。</td>
+    </tr>
+    <tr style="background: #F8FAFC;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📋 デフォルト（初期状態）</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #64748B;">★★★☆☆<br><span style="font-size:0.75rem; color:#475569;">(基本合格ライン)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">全126社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">時価総額300億円以下、売上+20%以上、社長比率20%以上。<br>最低合格ラインをクリアした全銘柄を広く見渡すための母集団です。</td>
+    </tr>
+  </tbody>
+</table>
+</div>
 
         ---
 

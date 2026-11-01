@@ -115,28 +115,39 @@ if os.path.exists(APP_ICON_FILE):
                 // Streamlit Cloud 特有の不要なバッジ・管理ボタンの抹消ルーチン
                 function hideCloudBadges() {{
                     var selectors = [
-                        '[data-testid="stManageApp"]',
-                        '[data-testid="manage-app-button"]',
-                        '.viewerBadge_container__1QSob',
-                        'div[class*="viewerBadge"]',
-                        'div[class*="manageApp"]',
-                        'div[class*="stAppDeployButton"]',
-                        'header[data-testid="stHeader"] [data-testid="stToolbar"]',
-                        'header[data-testid="stHeader"]',
+                        'footer',
+                        'header',
+                        '[data-testid="stToolbar"]',
+                        '[data-testid="stHeader"]',
                         '[data-testid="stStatusWidget"]',
                         'div.stStatusWidget',
                         'svg[data-testid="stLogo"]',
                         'a[href*="streamlit.io"]',
-                        'div[data-testid="stDecoration"]'
+                        'div[data-testid="manage-app-button"]',
+                        'div[class*="manageApp"]',
+                        'div[class*="viewerBadge"]',
+                        'div[class*="Profile"]',
+                        'button[class*="Profile"]',
+                        'div[class*="floatingButton"]',
+                        'div[class*="HostBadge"]',
+                        'div[class*="ProfileBadge"]',
+                        '.viewerBadge_container__1QSob',
+                        '[data-testid="stManageApp"]',
+                        '[data-testid="stDecoration"]',
+                        'div[data-testid="stBottomBlockContainer"]'
                     ];
                     var docs = [document];
                     try {{
                         if (window.parent && window.parent.document && window.parent.document !== document) {{
                             docs.push(window.parent.document);
                         }}
+                        if (window.top && window.top.document && window.top.document !== document) {{
+                            docs.push(window.top.document);
+                        }}
                     }} catch(e) {{}}
 
                     docs.forEach(function(d) {{
+                        // 不要アイコンの非表示化
                         selectors.forEach(function(sel) {{
                             try {{
                                 var nodes = d.querySelectorAll(sel);
@@ -145,41 +156,47 @@ if os.path.exists(APP_ICON_FILE):
                                     nodes[i].style.setProperty('visibility', 'hidden', 'important');
                                     nodes[i].style.setProperty('height', '0px', 'important');
                                     nodes[i].style.setProperty('opacity', '0', 'important');
+                                    nodes[i].style.setProperty('pointer-events', 'none', 'important');
                                 }}
                             }} catch(e) {{}}
                         }});
-                    }});
-                }}
-                hideCloudBadges();
-                    // タブ文字の純白強制ルーチン
-                    selectors.forEach(function(sel) {{}});
-                    try {{
-                        var tabs = d.querySelectorAll('[data-testid="stTabs"] [role="tablist"] button, div[data-baseweb="tab-list"] button');
-                        for (var ti = 0; ti < tabs.length; ti++) {{
-                            var t = tabs[ti];
-                            var isSel = t.getAttribute('aria-selected') === 'true';
-                            if (isSel) {{
-                                t.style.setProperty('background', 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)', 'important');
-                                t.style.setProperty('border', '1.5px solid #FCD34D', 'important');
-                                t.style.setProperty('color', '#0F172A', 'important');
-                                var inners = t.querySelectorAll('*');
-                                for (var k = 0; k < inners.length; k++) {{
-                                    inners[k].style.setProperty('color', '#0F172A', 'important');
-                                    inners[k].style.setProperty('font-weight', '800', 'important');
-                                }}
-                            }} else {{
-                                t.style.setProperty('background', 'rgba(255, 255, 255, 0.22)', 'important');
-                                t.style.setProperty('border', '1.5px solid rgba(255, 255, 255, 0.45)', 'important');
-                                t.style.setProperty('color', '#FFFFFF', 'important');
-                                var inners = t.querySelectorAll('*');
-                                for (var k = 0; k < inners.length; k++) {{
-                                    inners[k].style.setProperty('color', '#FFFFFF', 'important');
-                                    inners[k].style.setProperty('font-weight', '700', 'important');
+
+                        // タブ端の白いスクロールボタン消去
+                        try {{
+                            var scrollBtns = d.querySelectorAll('[data-testid="stTabs"] button[aria-label*="scroll"], [data-testid="stTabs"] [data-baseweb="tab-action"]');
+                            for (var s = 0; s < scrollBtns.length; s++) {{
+                                scrollBtns[s].style.setProperty('display', 'none', 'important');
+                            }}
+                        }} catch(e) {{}}
+
+                        // タブ文字の純白強制
+                        try {{
+                            var tabBtns = d.querySelectorAll('[data-testid="stTabs"] [role="tablist"] button[role="tab"], div[data-baseweb="tab-list"] button');
+                            for (var ti = 0; ti < tabBtns.length; ti++) {{
+                                var tb = tabBtns[ti];
+                                var isSel = tb.getAttribute('aria-selected') === 'true';
+                                if (isSel) {{
+                                    tb.style.setProperty('background', 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)', 'important');
+                                    tb.style.setProperty('color', '#0F172A', 'important');
+                                    var inners = tb.querySelectorAll('*');
+                                    for (var k = 0; k < inners.length; k++) {{
+                                        inners[k].style.setProperty('color', '#0F172A', 'important');
+                                        inners[k].style.setProperty('font-weight', '800', 'important');
+                                    }}
+                                }} else {{
+                                    tb.style.setProperty('background', 'rgba(255, 255, 255, 0.22)', 'important');
+                                    tb.style.setProperty('color', '#FFFFFF', 'important');
+                                    var inners = tb.querySelectorAll('*');
+                                    for (var k = 0; k < inners.length; k++) {{
+                                        inners[k].style.setProperty('color', '#FFFFFF', 'important');
+                                        inners[k].style.setProperty('font-weight', '700', 'important');
+                                    }}
                                 }}
                             }}
-                        }}
-                    }} catch(e) {{}}
-                    setInterval(hideCloudBadges, 800);
+                        }} catch(e) {{}}
+                    }});
+                }}
+                setInterval(hideCloudBadges, 600);
             }} catch(e) {{}}
         }})();
     </script>
@@ -353,18 +370,20 @@ st.markdown("""
     }
 
     /* ==========================================
-       タブメニューの完全高視認性デザイン（BaseWeb対応・文字白固定）
+       タブメニューの完全高視認性デザイン（最上部Sticky固定・端の白アイコン抹消・純白文字）
        ========================================== */
+    /* タブメニュー全体の最上部常駐・Sticky固定 */
     [data-testid="stTabs"] {
         position: -webkit-sticky !important;
         position: sticky !important;
         top: 0 !important;
         z-index: 9999 !important;
-        margin-bottom: 16px !important;
         background-color: #FFFFFF !important;
-        padding: 4px 0 !important;
+        padding: 4px 0 8px 0 !important;
+        margin-bottom: 12px !important;
     }
 
+    /* 濃紺グラデーションのタブバー（帯）本体 */
     [data-testid="stTabs"] [role="tablist"],
     [data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-baseweb="tab-list"] {
@@ -374,54 +393,59 @@ st.markdown("""
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
-        padding: 8px 10px 10px 8px !important;
+        padding: 6px 8px !important;
         border: 2px solid #2563EB !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25) !important;
-        scrollbar-width: thin !important;
-        scrollbar-color: #60A5FA #1E293B !important;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.35) !important;
+        scrollbar-width: none !important; /* スクロールバー非表示でスッキリ */
         -webkit-overflow-scrolling: touch !important;
     }
-
-    /* スタイリッシュな細型スクロールバー */
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
-        height: 5px !important;
-    }
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
-    div[data-baseweb="tab-list"]::-webkit-scrollbar-track {
-        background: #1E293B !important;
-        border-radius: 10px !important;
-    }
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
-    div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
-        background: #60A5FA !important;
-        border-radius: 10px !important;
+        display: none !important;
+        height: 0 !important;
     }
 
-    /* タブボタン本体（非選択時：半透明ホワイト背景 ＋ 純白文字） */
-    [data-testid="stTabs"] button,
-    [data-testid="stTabs"] [data-baseweb="tab"],
-    [data-testid="stTabs"] button[role="tab"],
+    /* 端の白い謎アイコン（BaseWebのスクロールボタン・アクションボタン）を完全根こそぎ消去 */
+    [data-testid="stTabs"] button[aria-label*="Scroll"],
+    [data-testid="stTabs"] button[aria-label*="scroll"],
+    [data-testid="stTabs"] button[aria-label*="Previous"],
+    [data-testid="stTabs"] button[aria-label*="Next"],
+    [data-testid="stTabs"] [data-baseweb="tab-action"],
+    [data-testid="stTabs"] [data-baseweb*="scroll"],
+    [data-testid="stTabs"] div[class*="ScrollButton"],
+    [data-testid="stTabs"] div[class*="scrollButton"],
+    div[data-baseweb="tab-action"],
+    div[data-baseweb*="scroll"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    /* タブボタン本体：非選択時は半透明ピル背景 ＋ 純白テキスト */
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"],
+    [data-testid="stTabs"] [role="tablist"] button[data-baseweb="tab"],
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button,
     div[data-baseweb="tab-list"] button {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
         padding: 8px 16px !important;
         border-radius: 8px !important;
-        font-weight: 700 !important;
-        font-size: 0.92rem !important;
-        color: #FFFFFF !important; /* 純白テキスト */
-        background-color: rgba(255, 255, 255, 0.18) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+        background-color: rgba(255, 255, 255, 0.22) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer !important;
+        margin: 2px 0 !important;
     }
 
-    /* タブバー（帯）の中のボタンと文字だけを純白に指定 */
-    [data-testid="stTabs"] [role="tablist"] button *,
-    [data-testid="stTabs"] [role="tablist"] button p,
-    [data-testid="stTabs"] [role="tablist"] button span,
+    /* タブボタン内の文字を絶対に純白（#FFFFFF）に強制 */
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"] *,
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"] p,
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"] span,
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"] div,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button *,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button p,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button span,
@@ -431,17 +455,38 @@ st.markdown("""
         color: #FFFFFF !important;
         font-weight: 700 !important;
         font-size: 0.92rem !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 選択中（アクティブ）タブの文字は濃紺（#0F172A） */
-    [data-testid="stTabs"] [role="tablist"] button[aria-selected="true"] *,
+    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 */
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"],
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"],
+    div[data-baseweb="tab-list"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
+        border: 1.5px solid #FCD34D !important;
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6) !important;
+    }
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] *,
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] p,
+    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] span,
     [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] *,
-    div[data-baseweb="tab-list"] button[aria-selected="true"] * {
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] p,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] span {
         color: #0F172A !important;
         font-weight: 800 !important;
+        text-shadow: none !important;
     }
 
-    /* タブコンテンツ領域（パネル内部）の文字色を本来の濃紺・黒に強制固定 */
+    /* デフォルトの青い下線（ハイライト）を完全消去 */
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+    [data-testid="stTabs"] [data-baseweb="tab-border"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        border: none !important;
+    }
+
+    /* タブコンテンツ領域（パネル内）の文字色を本来の濃紺・黒に強制固定 */
     div[data-testid="stTabContent"],
     div[role="tabpanel"],
     div[data-baseweb="tab-panel"] {
@@ -479,39 +524,6 @@ st.markdown("""
         color: #1E40AF !important;
         background-color: #DBEAFE !important;
         border: 1px solid #93C5FD !important;
-    }
-
-    /* タブのホバー時：白く輝く */
-    [data-testid="stTabs"] button:hover,
-    [data-testid="stTabs"] [data-baseweb="tab"]:hover,
-    div[data-baseweb="tab-list"] button:hover {
-        background-color: rgba(255, 255, 255, 0.32) !important;
-        border-color: #93C5FD !important;
-        transform: translateY(-2px) !important;
-    }
-
-    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 ＋ 浮遊シャドウ */
-    [data-testid="stTabs"] button[aria-selected="true"],
-    [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"],
-    div[data-baseweb="tab-list"] button[aria-selected="true"] {
-        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
-        border: 1.5px solid #FCD34D !important;
-        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
-        transform: translateY(-1px) !important;
-    }
-    [data-testid="stTabs"] button[aria-selected="true"] *,
-    [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] *,
-    div[data-baseweb="tab-list"] button[aria-selected="true"] * {
-        color: #0F172A !important; /* 濃紺文字でクッキリ視認 */
-        font-weight: 800 !important;
-    }
-
-    /* デフォルトの赤い下線・下部ボーダーを完全消去 */
-    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
-    [data-testid="stTabs"] [data-baseweb="tab-border"],
-    [data-testid="stTabs"] hr {
-        display: none !important;
-        height: 0 !important;
     }
 
     /* ==========================================
@@ -3613,7 +3625,7 @@ with tab3:
         * ❌ 理解できない株を買ってはいけない
         * ❌ 銀行や証券会社がすすめる投資信託を買ってはいけない
         * ❌ 他人に預ける投資はやってはいけない
-        """)
+        """, unsafe_allow_html=True)
 
 
 # ==========================================

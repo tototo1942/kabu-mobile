@@ -151,7 +151,35 @@ if os.path.exists(APP_ICON_FILE):
                     }});
                 }}
                 hideCloudBadges();
-                setInterval(hideCloudBadges, 800);
+                    // タブ文字の純白強制ルーチン
+                    selectors.forEach(function(sel) {{}});
+                    try {{
+                        var tabs = d.querySelectorAll('[data-testid="stTabs"] button, [data-testid="stTabs"] [role="tab"], [data-testid="stTabs"] [data-baseweb="tab"]');
+                        for (var ti = 0; ti < tabs.length; ti++) {{
+                            var t = tabs[ti];
+                            var isSel = t.getAttribute('aria-selected') === 'true';
+                            if (isSel) {{
+                                t.style.setProperty('background', 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)', 'important');
+                                t.style.setProperty('border', '1.5px solid #FCD34D', 'important');
+                                t.style.setProperty('color', '#0F172A', 'important');
+                                var inners = t.querySelectorAll('*');
+                                for (var k = 0; k < inners.length; k++) {{
+                                    inners[k].style.setProperty('color', '#0F172A', 'important');
+                                    inners[k].style.setProperty('font-weight', '800', 'important');
+                                }}
+                            }} else {{
+                                t.style.setProperty('background', 'rgba(255, 255, 255, 0.22)', 'important');
+                                t.style.setProperty('border', '1.5px solid rgba(255, 255, 255, 0.45)', 'important');
+                                t.style.setProperty('color', '#FFFFFF', 'important');
+                                var inners = t.querySelectorAll('*');
+                                for (var k = 0; k < inners.length; k++) {{
+                                    inners[k].style.setProperty('color', '#FFFFFF', 'important');
+                                    inners[k].style.setProperty('font-weight', '700', 'important');
+                                }}
+                            }}
+                        }}
+                    }} catch(e) {{}}
+                    setInterval(hideCloudBadges, 800);
             }} catch(e) {{}}
         }})();
     </script>
@@ -390,13 +418,18 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* タブ内すべての文字・子要素を純白（#FFFFFF）に強制 */
+    /* タブ内すべての文字・子要素を純白（#FFFFFF）に完全強制 */
+    [data-testid="stTabs"] *,
+    [data-testid="stTabs"] button,
     [data-testid="stTabs"] button *,
+    [data-testid="stTabs"] [role="tab"],
+    [data-testid="stTabs"] [role="tab"] *,
+    [data-testid="stTabs"] [data-baseweb="tab"],
     [data-testid="stTabs"] [data-baseweb="tab"] *,
-    [data-testid="stTabs"] button p,
-    [data-testid="stTabs"] button span,
-    [data-testid="stTabs"] button div,
-    div[data-baseweb="tab-list"] button * {
+    [data-testid="stTabs"] p,
+    [data-testid="stTabs"] span,
+    [data-testid="stTabs"] div,
+    div[data-baseweb="tab-list"] * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
         font-size: 0.92rem !important;
@@ -2482,21 +2515,48 @@ def render_stock_deep_dive(idx, tab1_df):
         kabutan_ir_url = f"https://kabutan.jp/stock/finance?code={stock_code}"
         official_ir_url = f"https://www.google.com/search?q={stock_code}+{stock_name}+IR+投資家情報"
         
-        ir_col1, ir_col2 = st.columns(2)
-        with ir_col1:
-            st.link_button(
-                label="📑 決算・IR業績 (株探)",
-                url=kabutan_ir_url,
-                use_container_width=True,
-                help="過去数年間の売上高成長推移・四半期進捗率・決算短信を一目で確認"
-            )
-        with ir_col2:
-            st.link_button(
-                label="🌐 公式IRサイト (説明資料)",
-                url=official_ir_url,
-                use_container_width=True,
-                help="企業の公式サイト内にあるIRページ・決算説明スライドPDFへ直行"
-            )
+        st.markdown(f"""
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px 0;">
+            <a href="{kabutan_ir_url}" target="_blank" style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                height: 44px;
+                background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+                color: #FFFFFF !important;
+                border: 1.5px solid #1D4ED8;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 0.90rem;
+                text-decoration: none;
+                box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+                box-sizing: border-box;
+                text-align: center;
+            ">
+                📑 決算・IR業績 (株探)
+            </a>
+            <a href="{official_ir_url}" target="_blank" style="
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                height: 44px;
+                background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+                color: #FFFFFF !important;
+                border: 1.5px solid #1D4ED8;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 0.90rem;
+                text-decoration: none;
+                box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
+                box-sizing: border-box;
+                text-align: center;
+            ">
+                🌐 公式IRサイト (説明資料)
+            </a>
+        </div>
+        """, unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -3049,71 +3109,29 @@ with tab1:
                 
                 st.subheader(f"📋 選択中銘柄: {cur_code} {cur_name} (1社表示中)")
                 
-                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン（高さ44px・位置・デザイン完全一致）
-                sel_b1, sel_b2 = st.columns([1.5, 2.0])
+                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン（完全同一のst.buttonで物理的に100%揃える）
+                sel_b1, sel_b2 = st.columns(2)
                 with sel_b1:
                     if st.button("⬅️ 全候補銘柄一覧に戻る", key=f"btn_back_list_{cur_code}", use_container_width=True):
                         st.session_state.selected_stock_code = None
                         st.rerun()
                 with sel_b2:
-                    copy_code_js = f"""
-                    <div style="margin: 0; padding: 0; width: 100%; height: 44px; display: flex; align-items: center;">
-                        <button onclick="copyCode()" style="
-                            width: 100%;
-                            height: 44px;
-                            min-height: 44px;
-                            max-height: 44px;
-                            box-sizing: border-box;
-                            background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
-                            color: #FFFFFF;
-                            border: 1.5px solid #1D4ED8;
-                            border-radius: 8px;
-                            font-size: 0.90rem;
-                            font-weight: 700;
-                            cursor: pointer;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                            gap: 6px;
-                            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
-                            margin: 0;
-                            padding: 0 16px;
-                        " id="cpBtn_{cur_code}">
-                            📋 コード【{cur_code}】をコピー
-                        </button>
-                    </div>
-                    <script>
-                    function copyCode() {{
-                        const c = "{cur_code}";
-                        const btn = document.getElementById("cpBtn_{cur_code}");
-                        function ok() {{
-                            btn.innerHTML = "✅ コピー完了！({cur_code})";
-                            btn.style.background = "#16A34A";
-                            setTimeout(function() {{
-                                btn.innerHTML = "📋 コード【{cur_code}】をコピー";
-                                btn.style.background = "linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)";
-                            }}, 2500);
-                        }}
-                        if (navigator.clipboard && window.isSecureContext) {{
-                            navigator.clipboard.writeText(c).then(ok).catch(fallback);
-                        }} else {{
-                            fallback();
-                        }}
-                        function fallback() {{
-                            const t = document.createElement("textarea");
-                            t.value = c;
-                            t.style.position = "fixed";
-                            t.style.left = "-9999px";
-                            document.body.appendChild(t);
-                            t.select();
-                            document.execCommand("copy");
-                            document.body.removeChild(t);
-                            ok();
-                        }}
-                    }}
-                    </script>
-                    """
-                    components.html(copy_code_js, height=45)
+                    if st.button(f"📋 コード【{cur_code}】をコピー", key=f"btn_copy_code_{cur_code}", use_container_width=True):
+                        st.components.v1.html(f"""
+                        <script>
+                            if (navigator.clipboard && window.isSecureContext) {{
+                                navigator.clipboard.writeText('{cur_code}');
+                            }} else {{
+                                var t = document.createElement('textarea');
+                                t.value = '{cur_code}';
+                                document.body.appendChild(t);
+                                t.select();
+                                document.execCommand('copy');
+                                document.body.removeChild(t);
+                            }}
+                        </script>
+                        """, height=0, width=0)
+                        st.toast(f"✅ コード【{cur_code}】をクリップボードにコピーしました！", icon="📋")
 
                 st.caption("💡 左端の「選択」チェックボックスをOFFにするか、上の「一覧に戻る」ボタンで全候補銘柄一覧に戻ります。")
 

@@ -325,25 +325,22 @@ st.markdown("""
     }
 
     /* ==========================================
-       立体ピル型タブ ＆ 完全独立ナビゲーションバー（青背景×白地）
+       タブメニューの完全高視認性デザイン（BaseWeb対応・文字白固定）
        ========================================== */
     [data-testid="stTabs"] {
         position: -webkit-sticky !important;
         position: sticky !important;
         top: 0 !important;
         z-index: 9999 !important;
-        margin-bottom: 20px !important;
+        margin-bottom: 16px !important;
         background-color: #FFFFFF !important;
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
+        padding: 4px 0 !important;
     }
-    
-    [data-testid="stTabs"] [role="tablist"] {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 0 !important;
-        z-index: 9999 !important;
-        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important; /* 濃紺〜ロイヤルブルーの独立バー帯 */
+
+    [data-testid="stTabs"] [role="tablist"],
+    [data-testid="stTabs"] [data-baseweb="tab-list"],
+    div[data-baseweb="tab-list"] {
+        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
@@ -359,116 +356,171 @@ st.markdown("""
     }
 
     /* スタイリッシュな細型スクロールバー */
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar {
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
+    div[data-baseweb="tab-list"]::-webkit-scrollbar {
         height: 5px !important;
     }
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track {
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
+    div[data-baseweb="tab-list"]::-webkit-scrollbar-track {
         background: #1E293B !important;
         border-radius: 10px !important;
     }
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb {
+    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
+    div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
         background: #60A5FA !important;
         border-radius: 10px !important;
     }
 
-    /* 各タブボタン：独立バー内の半透明ピル（白地・白テキスト） */
-    [data-testid="stTabs"] button[role="tab"] {
+    /* タブボタン本体（非選択時：半透明ホワイト背景 ＋ 純白文字） */
+    [data-testid="stTabs"] button,
+    [data-testid="stTabs"] [data-baseweb="tab"],
+    [data-testid="stTabs"] button[role="tab"],
+    div[data-baseweb="tab-list"] button {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
         padding: 8px 16px !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
-        font-size: 0.90rem !important;
+        font-size: 0.92rem !important;
         color: #FFFFFF !important; /* 純白テキスト */
-        background-color: rgba(255, 255, 255, 0.14) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.3) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+        background-color: rgba(255, 255, 255, 0.18) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.4) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer !important;
     }
 
-    /* タブ内すべての文字を純白に強制（全体CSSの黒文字上書き） */
-    [data-testid="stTabs"] button[role="tab"] *,
-    [data-testid="stTabs"] button[role="tab"] p,
-    [data-testid="stTabs"] button[role="tab"] span,
-    [data-testid="stTabs"] button[role="tab"] div {
+    /* タブ内すべての文字・子要素を純白（#FFFFFF）に強制 */
+    [data-testid="stTabs"] button *,
+    [data-testid="stTabs"] [data-baseweb="tab"] *,
+    [data-testid="stTabs"] button p,
+    [data-testid="stTabs"] button span,
+    [data-testid="stTabs"] button div,
+    div[data-baseweb="tab-list"] button * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
+        font-size: 0.92rem !important;
     }
 
     /* タブのホバー時：白く輝く */
-    [data-testid="stTabs"] button[role="tab"]:hover {
-        background-color: rgba(255, 255, 255, 0.28) !important;
+    [data-testid="stTabs"] button:hover,
+    [data-testid="stTabs"] [data-baseweb="tab"]:hover,
+    div[data-baseweb="tab-list"] button:hover {
+        background-color: rgba(255, 255, 255, 0.32) !important;
         border-color: #93C5FD !important;
         transform: translateY(-2px) !important;
     }
 
     /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 ＋ 浮遊シャドウ */
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important; /* 鮮やかなゴールド */
+    [data-testid="stTabs"] button[aria-selected="true"],
+    [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"],
+    div[data-baseweb="tab-list"] button[aria-selected="true"] {
+        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
         border: 1.5px solid #FCD34D !important;
         box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
         transform: translateY(-1px) !important;
     }
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] *,
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] p,
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] span,
-    [data-testid="stTabs"] button[role="tab"][aria-selected="true"] div {
+    [data-testid="stTabs"] button[aria-selected="true"] *,
+    [data-testid="stTabs"] [data-baseweb="tab"][aria-selected="true"] *,
+    div[data-baseweb="tab-list"] button[aria-selected="true"] * {
         color: #0F172A !important; /* 濃紺文字でクッキリ視認 */
         font-weight: 800 !important;
     }
 
-    /* デフォルトの赤い下線を完全消去 */
-    [data-testid="stTabs"] [data-baseweb="tab-highlight"] {
+    /* デフォルトの赤い下線・下部ボーダーを完全消去 */
+    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
+    [data-testid="stTabs"] [data-baseweb="tab-border"],
+    [data-testid="stTabs"] hr {
         display: none !important;
+        height: 0 !important;
     }
 
     /* ==========================================
        全ボタン共通デザイン：色付き背景 ＆ 白抜き文字 ＆ 立体視認性
+       （st.button, st.download_button, st.link_button すべてに適用）
        ========================================== */
+    button[kind="secondary"],
+    button[data-testid="baseButton-secondary"],
+    button[kind="primary"],
+    button[data-testid="baseButton-primary"],
     div.stButton > button,
     div[data-testid="stButton"] > button,
-    div[data-testid="stDownloadButton"] > button {
+    div[data-testid="stDownloadButton"] > button,
+    div[data-testid="stLinkButton"] > a,
+    a[data-testid="stLinkButton"] {
         background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
         color: #FFFFFF !important;
         border: 1.5px solid #1D4ED8 !important;
         border-radius: 8px !important;
         font-weight: 700 !important;
         font-size: 0.90rem !important;
-        min-height: 42px !important;
-        height: 42px !important;
+        min-height: 44px !important;
+        height: 44px !important;
         padding: 0 16px !important;
         box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25) !important;
         transition: all 0.2s ease !important;
-        display: flex !important;
+        display: inline-flex !important;
         align-items: center !important;
         justify-content: center !important;
+        text-decoration: none !important;
         cursor: pointer !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
     }
+
+    button[kind="secondary"]:hover,
+    button[data-testid="baseButton-secondary"]:hover,
+    button[kind="primary"]:hover,
+    button[data-testid="baseButton-primary"]:hover,
     div.stButton > button:hover,
     div[data-testid="stButton"] > button:hover,
-    div[data-testid="stDownloadButton"] > button:hover {
+    div[data-testid="stDownloadButton"] > button:hover,
+    div[data-testid="stLinkButton"] > a:hover,
+    a[data-testid="stLinkButton"]:hover {
         background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%) !important;
         color: #FFFFFF !important;
         box-shadow: 0 4px 10px rgba(30, 58, 138, 0.35) !important;
         transform: translateY(-1px) !important;
     }
+
+    button[kind="secondary"] *,
+    button[data-testid="baseButton-secondary"] *,
+    button[kind="primary"] *,
+    button[data-testid="baseButton-primary"] *,
     div.stButton > button *,
-    div.stButton > button p,
-    div.stButton > button span,
-    div.stButton > button div,
-    div[data-testid="stDownloadButton"] > button * {
+    div[data-testid="stButton"] > button *,
+    div[data-testid="stDownloadButton"] > button *,
+    div[data-testid="stLinkButton"] > a *,
+    a[data-testid="stLinkButton"] * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
     }
 
-    /* 「全候補銘柄一覧に戻る」ボタン：スレート濃紺で高さ42px・位置を完全一致 */
-    div.stButton > button[key*="btn_back_list"],
-    button[key*="btn_back_list"] {
-        background: linear-gradient(135deg, #334155 0%, #475569 100%) !important;
-        border: 1.5px solid #1E293B !important;
-        min-height: 42px !important;
-        height: 42px !important;
+    /* カラム内のマージン完全リセット（並列ボタンの縦ズレ根絶） */
+    div[data-testid="column"] {
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+    }
+    div[data-testid="column"] > div {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    div[data-testid="column"] div[data-testid="stButton"],
+    div[data-testid="column"] div[data-testid="stMarkdownContainer"] {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    div[data-testid="column"] button {
+        height: 44px !important;
+        min-height: 44px !important;
+        max-height: 44px !important;
+        line-height: 44px !important;
+        padding: 0 14px !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
     }
 
     /* ヘッダータイトルの純白強制（全体CSSのh1黒色を完全上書き） */
@@ -2997,18 +3049,21 @@ with tab1:
                 
                 st.subheader(f"📋 選択中銘柄: {cur_code} {cur_name} (1社表示中)")
                 
-                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン（高さ・位置・デザイン完全統一）
-                sel_b1, sel_b2 = st.columns([1.5, 2.0], vertical_alignment="center")
+                # ⬅️ 一覧に戻る ＆ 📋 コードワンタップコピーの並列ボタン（高さ44px・位置・デザイン完全一致）
+                sel_b1, sel_b2 = st.columns([1.5, 2.0])
                 with sel_b1:
                     if st.button("⬅️ 全候補銘柄一覧に戻る", key=f"btn_back_list_{cur_code}", use_container_width=True):
                         st.session_state.selected_stock_code = None
                         st.rerun()
                 with sel_b2:
                     copy_code_js = f"""
-                    <div style="display: flex; align-items: center; height: 100%; margin: 0; padding: 0;">
+                    <div style="margin: 0; padding: 0; width: 100%; height: 44px; display: flex; align-items: center;">
                         <button onclick="copyCode()" style="
                             width: 100%;
-                            height: 42px;
+                            height: 44px;
+                            min-height: 44px;
+                            max-height: 44px;
+                            box-sizing: border-box;
                             background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
                             color: #FFFFFF;
                             border: 1.5px solid #1D4ED8;
@@ -3022,7 +3077,7 @@ with tab1:
                             gap: 6px;
                             box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
                             margin: 0;
-                            box-sizing: border-box;
+                            padding: 0 16px;
                         " id="cpBtn_{cur_code}">
                             📋 コード【{cur_code}】をコピー
                         </button>

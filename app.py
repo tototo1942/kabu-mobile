@@ -235,7 +235,7 @@ st.markdown("""
     }
 
     /* ==========================================
-       立体ピル型タブ ＆ 横スクロール可能デザイン (文字説明ゼロ)
+       立体ピル型タブ ＆ 画面上部吸着・固定表示（Sticky Header）
        ========================================== */
     [data-testid="stTabs"] {
         position: relative;
@@ -243,16 +243,20 @@ st.markdown("""
     }
     
     [data-testid="stTabs"] [role="tablist"] {
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 2.85rem !important; /* スクロール時に画面上部にピタッと固定 */
+        z-index: 999 !important;
+        background: #FFFFFF !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
-        padding: 6px 10px 10px 6px !important;
-        background: #F1F5F9 !important;
+        padding: 8px 10px 10px 8px !important;
         border: 1px solid #CBD5E1 !important;
         border-radius: 12px !important;
-        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
         scrollbar-width: thin !important;
         scrollbar-color: #94A3B8 #E2E8F0 !important;
         -webkit-overflow-scrolling: touch !important;
@@ -360,8 +364,31 @@ st.markdown("""
         color: #2563EB !important;
     }
 
+    /* 投資メモ・テキスト入力エリアの視認性最大化（枠線常時くっきり表示） */
+    [data-testid="stTextArea"] textarea {
+        border: 2px solid #3B82F6 !important; /* ロイヤルブルーの太枠 */
+        border-radius: 8px !important;
+        background-color: #FFFFFF !important;
+        color: #0F172A !important;
+        font-size: 0.95rem !important;
+        line-height: 1.5 !important;
+        box-shadow: 0 2px 5px rgba(59, 130, 246, 0.08) !important;
+        padding: 10px 12px !important;
+    }
+    [data-testid="stTextArea"] textarea:focus {
+        border-color: #1D4ED8 !important;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25) !important;
+    }
+
     /* スマホ特化レスポンシブ最適化 (幅768px以下) */
     @media (max-width: 768px) {
+        /* スマホスクロール時のタブ固定位置 */
+        [data-testid="stTabs"] [role="tablist"] {
+            top: 0 !important;
+            padding: 6px 8px !important;
+            border-radius: 8px !important;
+        }
+
         .block-container {
             padding-top: 3.2rem !important; /* 画像上部の見切れを完全防止 */
             padding-left: 0.6rem !important;
@@ -2417,23 +2444,26 @@ def render_stock_deep_dive(idx, tab1_df):
 
         # プロンプト文の上に被らない、完全に独立した大型コピーボタン
         copy_html = f"""
-        <div style="margin-bottom: 8px;">
+        <div style="margin: 0; padding: 2px 0;">
             <button id="copyPromptBtn" onclick="copyToClipboard()" style="
                 width: 100%;
                 background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
                 color: white;
                 border: none;
-                padding: 12px 20px;
-                font-size: 16px;
+                padding: 12px 14px;
+                font-size: 15px;
+                line-height: 1.35;
                 font-weight: 700;
                 border-radius: 8px;
                 cursor: pointer;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                gap: 10px;
+                text-align: center;
+                gap: 8px;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 transition: all 0.2s ease;
+                box-sizing: border-box;
             ">
                 📋 このプロンプトをワンクリックでコピー
             </button>
@@ -2500,7 +2530,7 @@ def render_stock_deep_dive(idx, tab1_df):
         }}
         </script>
         """
-        components.html(copy_html, height=52)
+        components.html(copy_html, height=72)
 
         with st.expander("📄 生成されたプロンプト本文（確認・手動コピー用）", expanded=False):
             st.code(prompt_text, language="markdown")
@@ -3162,49 +3192,54 @@ with tab5:
         # 売上高成長率
         with st.expander("📈 売上高成長率（%）"):
             st.markdown("""
-            > 💡 **要約**: 本業の勢いと急成長の証拠
+            > 💡 **要約**: 本業の勢いと急成長の証拠（全範囲の完全判定早見表）
 
             * **用語の意味**: 会社が本業のサービスや商品で稼いだ「売上」が、去年に比べてどれくらい増えたかを表す最重要指標です。
-            * **数値の読み取り方**:
-              * 🟢 **`+20% 以上`（青信号・理想）**: 遠藤氏の選定基準をクリア。売上が毎年20%以上伸びている企業は、3年で約1.7倍、4年で2倍に拡大する爆発的な成長力を持っています。
-              * 🟡 **`0% 〜 +10%`（黄信号・平凡）**: 成長が鈍化しており、小型株集中投資の対象としては勢い不足です。
-              * 🔴 **`マイナス（-）`（赤信号・警戒）**: 去年の売上を下回っており、本業が縮小している危険シグナルです。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * 🟢 **`+20.0% 以上`（青信号・理想の大化け水準）**: 本業が猛烈に急拡大。3年で約1.7倍、4年で2倍に成長する本物の大化け成長株です。
+              * ⚪ **`+10.0% 〜 +19.9%`（中立・及第点ゾーン）**: 黒字で順調に成長中。合格圏ですが、1年で株価3倍を狙うにはやや勢い不足の標準ペースです。
+              * 🟡 **`0.0% 〜 +9.9%`（黄信号・鈍化警戒）**: 成長がストップしかけており、成熟企業・減速の兆候。小型株集中投資としては勢い不足です。
+              * 🔴 **`マイナス（-）`（赤信号・手出し無用）**: 前年の売上を割り込み本業が縮小。大化け投資の対象外です。
             """)
 
         # 高値比下落率
         with st.expander("📉 高値比下落率（%）"):
             st.markdown("""
-            > 💡 **要約**: 過去最高値からの値引き（バーゲン）度合
+            > 💡 **要約**: 過去最高値からの値引き（バーゲン）度合（全範囲の完全判定早見表）
 
             * **用語の意味**: 過去1年間の最も高かった株価（52週高値）から、現在どれくらい値下がりしているかを表します。
-            * **数値の読み取り方**:
-              * 🟡 **`0% 〜 -3%`（高値警戒・飛びつき注意）**: 直近の天井（レジスタンス）に接近中。高値掴みの反落リスクがあるため「押し目待ち」が賢明です。
-              * 🟢 **`-7% 〜 -20%`（青信号・絶好の押し目買いゾーン）**: 健全な利益確定売りをこなした調整完了局面。リスクを抑えてエントリーできる最良の水準です。
-              * 🟣 **`-35% 〜 -50% 超`（紫信号・リバウンド警戒）**: 高値から大暴落した後の戻り局面。過去の高値掴み組の戻り売り（しこり玉）が大量に降ってくるため慎重な見極めが必要です。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * 🟡 **`0.0% 〜 -3.0%`（高値警戒・飛びつき注意）**: 直近の天井（レジスタンス）直前。利益確定売りに押されやすいため、飛びつきを避けて押し目を待つのが賢明です。
+              * ⚪ **`-3.1% 〜 -6.9%`（浅い調整・様子見ゾーン）**: 調整が始まったばかりの初期段階。ここから反発するか、さらに下落が深まるかを見極める保留ゾーンです。
+              * 🟢 **`-7.0% 〜 -20.0%`（青信号・絶好の押し目買い好機）**: 上昇トレンド中の健全な利益確定売りが一巡し、25日移動平均線で反発しやすい最も安全で勝率の高い買い場です。
+              * ⚪ **`-20.1% 〜 -34.9%`（深押し・反発観察ゾーン）**: 調整がやや長引いている状態。下げ止まり（サポートラインでのもみ合い）を確認してから仕掛けるべきゾーンです。
+              * 🟣 **`-35.0% 超`（紫信号・底割れ警戒）**: 高値から大暴落した後の状態。過去の高値掴み組の戻り売り（しこり玉）が大量に待ち構えているため手出し無用です。
             """)
 
         # 25日線乖離率
         with st.expander("📏 25日移動平均線乖離率（%）"):
             st.markdown("""
-            > 💡 **要約**: 株価の過熱感と割安度
+            > 💡 **要約**: 株価の過熱感と割安度（全範囲の完全判定早見表）
 
             * **用語の意味**: 直近25日間の平均購入価格から、現在の株価がどれくらい離れているかを表す過熱感メーターです。
-            * **数値の読み取り方**:
-              * ⚠️ **`+15% 以上`（過熱シグナル）**: 急上昇して買われすぎている状態。まもなく利食い売りに押される可能性が高いため、飛びつき買いは厳禁です。
-              * 🎯 **`0% 〜 +7%`（好機シグナル）**: 25日線のすぐ上にあり、移動平均線に沿って綺麗に上昇している最も安全な買い場です。
-              * 🔄 **`マイナス（-）`（調整シグナル）**: 株価が25日線の下に潜り込んでおり、反発して上抜けるまで手出し無用です。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * ⚠️ **`+15.0% 以上`（赤・過熱警戒シグナル）**: 急上昇して買われすぎている過熱状態。短期的な反落リスクが極めて高いため、飛びつき買いは厳禁です。
+              * ⚪ **`+7.1% 〜 +14.9%`（中立・上昇キープゾーン）**: 強い上昇トレンドを維持しているが、新規買いには少し引きつけが足りない中間ゾーンです。
+              * 🎯 **`0.0% 〜 +7.0%`（青信号・好機シグナル）**: 25日移動平均線のすぐ上にあり、移動平均線を床（サポート）にして綺麗に反発する最も安全な買い場です。
+              * 🔄 **`マイナス（-）`（黄・調整シグナル）**: 株価が25日線の下に潜り込んでおり、再び25日線を上抜けて陽線をつけるまで待つべき調整局面です。
             """)
 
         # 時価総額
         with st.expander("🏢 時価総額（億円）"):
             st.markdown("""
-            > 💡 **要約**: 会社の身軽さと大化け余力
+            > 💡 **要約**: 会社の身軽さと大化け余力（全範囲の完全判定早見表）
 
             * **用語の意味**: `現在の株価 × 発行済み株式数` で計算され、「その会社を丸ごと全部買い占めるのに必要なお金」を表します。
-            * **数値の読み取り方**:
+            * **数値の読み取り方（隙間なし完全判定）**:
               * 👑 **`100億円 〜 200億円未満`（理想のサイズ）**: 身軽で数倍化（テンバガー）が最も狙いやすく、これから機関投資家が買い始めるゴールデンゾーンです。
-              * ✅ **`300億円以下`（合格ライン）**: 遠藤氏の選定上限。身軽に値上がりできる上限サイズです。
-              * ❌ **`500億〜1,000億円超`（対象外）**: トヨタやソニーのような大企業は安心感がありますが、1年で株価が2倍・3倍になることは極めて稀です。
+              * ✅ **`200億円 〜 300億円`（合格ライン）**: 小型成長株として十分身軽に値上がりできる上限サイズです。
+              * ⚪ **`300億円 〜 500億円`（中小型ゾーン）**: 安定感は増しますが、短期急騰の爆発力は徐々にマイルドになる中間サイズです。
+              * ❌ **`500億円超`（対象外）**: 大企業・中堅企業で急騰余力が小さいため、小型株集中投資の対象外です。
             """)
 
         # 単元株と1株取引

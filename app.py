@@ -113,7 +113,7 @@ if os.path.exists(APP_ICON_FILE):
                 doc.title = 'TOTOTO-KABU';
 
                 // Streamlit Cloud 特有の不要なバッジ・管理ボタンの抹消ルーチン
-                function hideCloudBadges() {
+                function hideCloudBadges() {{
                     var selectors = [
                         '[data-testid="stManageApp"]',
                         '[data-testid="manage-app-button"]',
@@ -125,26 +125,26 @@ if os.path.exists(APP_ICON_FILE):
                         'header[data-testid="stHeader"]'
                     ];
                     var docs = [document];
-                    try {
-                        if (window.parent && window.parent.document && window.parent.document !== document) {
+                    try {{
+                        if (window.parent && window.parent.document && window.parent.document !== document) {{
                             docs.push(window.parent.document);
-                        }
-                    } catch(e) {}
+                        }}
+                    }} catch(e) {{}}
 
-                    docs.forEach(function(d) {
-                        selectors.forEach(function(sel) {
-                            try {
+                    docs.forEach(function(d) {{
+                        selectors.forEach(function(sel) {{
+                            try {{
                                 var nodes = d.querySelectorAll(sel);
-                                for (var i = 0; i < nodes.length; i++) {
+                                for (var i = 0; i < nodes.length; i++) {{
                                     nodes[i].style.setProperty('display', 'none', 'important');
                                     nodes[i].style.setProperty('visibility', 'hidden', 'important');
                                     nodes[i].style.setProperty('height', '0px', 'important');
                                     nodes[i].style.setProperty('opacity', '0', 'important');
-                                }
-                            } catch(e) {}
-                        });
-                    });
-                }
+                                }}
+                            }} catch(e) {{}}
+                        }});
+                    }});
+                }}
                 hideCloudBadges();
                 setInterval(hideCloudBadges, 800);
             }} catch(e) {{}}

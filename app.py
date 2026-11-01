@@ -124,8 +124,8 @@ if os.path.exists(APP_ICON_FILE):
                         'svg[data-testid="stLogo"]',
                         'a[href*="streamlit.io"]',
                         'div[data-testid="manage-app-button"]',
-                        'div[class*="manageApp"]',
                         'div[class*="viewerBadge"]',
+                        'div[class*="manageApp"]',
                         'div[class*="Profile"]',
                         'button[class*="Profile"]',
                         'div[class*="floatingButton"]',
@@ -134,69 +134,73 @@ if os.path.exists(APP_ICON_FILE):
                         '.viewerBadge_container__1QSob',
                         '[data-testid="stManageApp"]',
                         '[data-testid="stDecoration"]',
-                        'div[data-testid="stBottomBlockContainer"]'
+                        'div[data-testid="stBottomBlockContainer"]',
+                        'div[style*="bottom: 0"]',
+                        'div[style*="bottom:0"]'
                     ];
+
                     var docs = [document];
                     try {{
                         if (window.parent && window.parent.document && window.parent.document !== document) {{
                             docs.push(window.parent.document);
                         }}
+                    }} catch(e) {{}}
+                    try {{
                         if (window.top && window.top.document && window.top.document !== document) {{
                             docs.push(window.top.document);
                         }}
                     }} catch(e) {{}}
 
                     docs.forEach(function(d) {{
-                        // 不要アイコンの非表示化
+                        // 王冠バッジ・アバターの徹底消去（DOMから物理削除）
                         selectors.forEach(function(sel) {{
                             try {{
                                 var nodes = d.querySelectorAll(sel);
                                 for (var i = 0; i < nodes.length; i++) {{
-                                    nodes[i].style.setProperty('display', 'none', 'important');
-                                    nodes[i].style.setProperty('visibility', 'hidden', 'important');
-                                    nodes[i].style.setProperty('height', '0px', 'important');
-                                    nodes[i].style.setProperty('opacity', '0', 'important');
-                                    nodes[i].style.setProperty('pointer-events', 'none', 'important');
+                                    var n = nodes[i];
+                                    n.style.setProperty('display', 'none', 'important');
+                                    n.style.setProperty('visibility', 'hidden', 'important');
+                                    n.style.setProperty('opacity', '0', 'important');
+                                    if (n.parentNode) {{
+                                        n.parentNode.removeChild(n);
+                                    }}
                                 }}
                             }} catch(e) {{}}
                         }});
 
                         // タブ端の白いスクロールボタン消去
                         try {{
-                            var scrollBtns = d.querySelectorAll('[data-testid="stTabs"] button[aria-label*="scroll"], [data-testid="stTabs"] [data-baseweb="tab-action"]');
+                            var scrollBtns = d.querySelectorAll('[data-testid="stTabs"] button[aria-label*="Scroll"], [data-testid="stTabs"] button[aria-label*="scroll"], [data-testid="stTabs"] [data-baseweb="tab-action"]');
                             for (var s = 0; s < scrollBtns.length; s++) {{
                                 scrollBtns[s].style.setProperty('display', 'none', 'important');
+                                if (scrollBtns[s].parentNode) {{
+                                    scrollBtns[s].parentNode.removeChild(scrollBtns[s]);
+                                }}
                             }}
                         }} catch(e) {{}}
 
                         // タブ文字の純白強制
                         try {{
-                            var tabBtns = d.querySelectorAll('[data-testid="stTabs"] [role="tablist"] button[role="tab"], div[data-baseweb="tab-list"] button');
-                            for (var ti = 0; ti < tabBtns.length; ti++) {{
-                                var tb = tabBtns[ti];
-                                var isSel = tb.getAttribute('aria-selected') === 'true';
-                                if (isSel) {{
-                                    tb.style.setProperty('background', 'linear-gradient(135deg, #FDE047 0%, #F59E0B 100%)', 'important');
-                                    tb.style.setProperty('color', '#0F172A', 'important');
-                                    var inners = tb.querySelectorAll('*');
-                                    for (var k = 0; k < inners.length; k++) {{
-                                        inners[k].style.setProperty('color', '#0F172A', 'important');
-                                        inners[k].style.setProperty('font-weight', '800', 'important');
-                                    }}
-                                }} else {{
-                                    tb.style.setProperty('background', 'rgba(255, 255, 255, 0.22)', 'important');
-                                    tb.style.setProperty('color', '#FFFFFF', 'important');
-                                    var inners = tb.querySelectorAll('*');
-                                    for (var k = 0; k < inners.length; k++) {{
-                                        inners[k].style.setProperty('color', '#FFFFFF', 'important');
-                                        inners[k].style.setProperty('font-weight', '700', 'important');
+                            var tabHeader = d.querySelector('div[data-testid="stTabs"] > div:first-child');
+                            if (tabHeader) {{
+                                var allTabTexts = tabHeader.querySelectorAll('*');
+                                for (var ti = 0; ti < allTabTexts.length; ti++) {{
+                                    var el = allTabTexts[ti];
+                                    var isSelBtn = el.closest('button[aria-selected="true"]');
+                                    if (isSelBtn) {{
+                                        el.style.setProperty('color', '#0F172A', 'important');
+                                        el.style.setProperty('font-weight', '800', 'important');
+                                    }} else {{
+                                        el.style.setProperty('color', '#FFFFFF', 'important');
+                                        el.style.setProperty('font-weight', '700', 'important');
                                     }}
                                 }}
                             }}
                         }} catch(e) {{}}
                     }});
                 }}
-                setInterval(hideCloudBadges, 600);
+                hideCloudBadges();
+                setInterval(hideCloudBadges, 400);
             }} catch(e) {{}}
         }})();
     </script>
@@ -253,13 +257,17 @@ st.markdown("""
         color: #0F172A !important;
     }
 
-    /* Android Chrome Sticky対策：親スクロールコンテナのoverflow正常化 */
+    /* Android Chrome Sticky完全作動対策：overflow-xをclipにしてstickyを殺さない */
+    html, body {
+        overflow-x: clip !important;
+    }
     [data-testid="stAppViewContainer"] {
-        overflow-x: hidden !important;
+        overflow-x: clip !important;
         overflow-y: auto !important;
     }
-    section.main {
-        overflow: visible !important;
+    section.main, .main, div.block-container {
+        overflow-x: clip !important;
+        overflow-y: visible !important;
     }
 
     
@@ -370,22 +378,23 @@ st.markdown("""
     }
 
     /* ==========================================
-       タブメニューの完全高視認性デザイン（最上部Sticky固定・端の白アイコン抹消・純白文字）
+       タブメニューの完全高視認性デザイン（Sticky固定・純白文字・端白アイコン消去）
        ========================================== */
-    /* タブメニュー全体の最上部常駐・Sticky固定 */
-    [data-testid="stTabs"] {
+    /* タブヘッダーの最上部Sticky固定（常にトップに常駐） */
+    div[data-testid="stTabs"] > div:first-child {
         position: -webkit-sticky !important;
         position: sticky !important;
         top: 0 !important;
-        z-index: 9999 !important;
+        z-index: 999999 !important;
         background-color: #FFFFFF !important;
         padding: 4px 0 8px 0 !important;
-        margin-bottom: 12px !important;
+        margin-bottom: 8px !important;
     }
 
-    /* 濃紺グラデーションのタブバー（帯）本体 */
-    [data-testid="stTabs"] [role="tablist"],
-    [data-testid="stTabs"] [data-baseweb="tab-list"],
+    /* 濃紺グラデーションのタブバー帯本体 */
+    div[data-testid="stTabs"] > div:first-child > div,
+    div[data-testid="stTabs"] [role="tablist"],
+    div[data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-baseweb="tab-list"] {
         background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
@@ -396,27 +405,24 @@ st.markdown("""
         padding: 6px 8px !important;
         border: 2px solid #2563EB !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.35) !important;
-        scrollbar-width: none !important; /* スクロールバー非表示でスッキリ */
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.4) !important;
+        scrollbar-width: none !important;
         -webkit-overflow-scrolling: touch !important;
     }
-    [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
+    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
         display: none !important;
         height: 0 !important;
     }
 
-    /* 端の白い謎アイコン（BaseWebのスクロールボタン・アクションボタン）を完全根こそぎ消去 */
-    [data-testid="stTabs"] button[aria-label*="Scroll"],
-    [data-testid="stTabs"] button[aria-label*="scroll"],
-    [data-testid="stTabs"] button[aria-label*="Previous"],
-    [data-testid="stTabs"] button[aria-label*="Next"],
-    [data-testid="stTabs"] [data-baseweb="tab-action"],
-    [data-testid="stTabs"] [data-baseweb*="scroll"],
-    [data-testid="stTabs"] div[class*="ScrollButton"],
-    [data-testid="stTabs"] div[class*="scrollButton"],
-    div[data-baseweb="tab-action"],
-    div[data-baseweb*="scroll"] {
+    /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */
+    div[data-testid="stTabs"] button[aria-label*="Scroll"],
+    div[data-testid="stTabs"] button[aria-label*="scroll"],
+    div[data-testid="stTabs"] button[aria-label*="Previous"],
+    div[data-testid="stTabs"] button[aria-label*="Next"],
+    div[data-testid="stTabs"] [data-baseweb="tab-action"],
+    div[data-testid="stTabs"] [data-baseweb*="scroll"],
+    div[data-baseweb="tab-action"] {
         display: none !important;
         visibility: hidden !important;
         width: 0 !important;
@@ -425,11 +431,8 @@ st.markdown("""
         pointer-events: none !important;
     }
 
-    /* タブボタン本体：非選択時は半透明ピル背景 ＋ 純白テキスト */
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"],
-    [data-testid="stTabs"] [role="tablist"] button[data-baseweb="tab"],
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button,
-    div[data-baseweb="tab-list"] button {
+    /* タブボタン：非選択時の半透明ピル背景 */
+    div[data-testid="stTabs"] > div:first-child button {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
         padding: 8px 16px !important;
@@ -441,52 +444,36 @@ st.markdown("""
         margin: 2px 0 !important;
     }
 
-    /* タブボタン内の文字を絶対に純白（#FFFFFF）に強制 */
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"] *,
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"] p,
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"] span,
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"] div,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button *,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button p,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button span,
-    div[data-baseweb="tab-list"] button *,
-    div[data-baseweb="tab-list"] button p,
-    div[data-baseweb="tab-list"] button span {
+    /* タブバー内部のあらゆる文字を絶対に純白（#FFFFFF）に強制固定！ */
+    div[data-testid="stTabs"] > div:first-child * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
         font-size: 0.92rem !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 */
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"],
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"],
-    div[data-baseweb="tab-list"] button[aria-selected="true"] {
+    /* 選択中（アクティブ）タブ：ゴールド背景 ＋ 濃紺文字 */
+    div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] {
         background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
         border: 1.5px solid #FCD34D !important;
         box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6) !important;
     }
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] *,
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] p,
-    [data-testid="stTabs"] [role="tablist"] button[role="tab"][aria-selected="true"] span,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] *,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] p,
-    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] span {
+    div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
         color: #0F172A !important;
         font-weight: 800 !important;
         text-shadow: none !important;
     }
 
     /* デフォルトの青い下線（ハイライト）を完全消去 */
-    [data-testid="stTabs"] [data-baseweb="tab-highlight"],
-    [data-testid="stTabs"] [data-baseweb="tab-border"] {
+    div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+    div[data-testid="stTabs"] [data-baseweb="tab-border"] {
         display: none !important;
         visibility: hidden !important;
         height: 0 !important;
         border: none !important;
     }
 
-    /* タブコンテンツ領域（パネル内）の文字色を本来の濃紺・黒に強制固定 */
+    /* タブパネル（コンテンツ中身）の通常文字色を濃紺・黒に固定 */
     div[data-testid="stTabContent"],
     div[role="tabpanel"],
     div[data-baseweb="tab-panel"] {
@@ -524,6 +511,23 @@ st.markdown("""
         color: #1E40AF !important;
         background-color: #DBEAFE !important;
         border: 1px solid #93C5FD !important;
+    }
+
+    /* 右下の王冠バッジ・アバターアイコンの完全消去CSS */
+    div[style*="position: fixed"][style*="bottom"],
+    div[style*="position:fixed"][style*="bottom"],
+    div[class*="viewerBadge"],
+    div[class*="Profile"],
+    button[class*="Profile"],
+    .viewerBadge_container__1QSob,
+    [data-testid="manage-app-button"] {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        transform: scale(0) !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
 
     /* ==========================================
@@ -2868,25 +2872,6 @@ def render_stock_deep_dive(idx, tab1_df):
         st.caption("遠藤洋氏のチェック基準『株価チャートが上昇トレンドであること』を検証します。25日線（緑色）および75日線（オレンジ色）の上で株価が推移しているかをご確認ください。")
         render_stock_chart(stock_code, stock_name)
 
-        # --- イノベーター理論インジケーター ---
-        st.markdown("---")
-        st.markdown("### 💡 イノベーター理論 普及フェーズ判定 (書籍P.13〜19)")
-        
-        p1, p2 = st.columns([2, 1])
-        with p1:
-            st.markdown("""
-            * **【買い時】アーリーアダプター期 (初期採用者)**:
-              アンテナの高い感度の良い人が使い始めた段階。世間の認知はまだ「怪しい」「一部の流行」。株価急騰の初動！
-            * **【売り時】レイトマジョリティ期 (後期追随者)**:
-              普段新しいものを使わない一般層や保守層まで知れ渡った段階。株価はすでに織り込み済みで天井圏のリスク大。
-            """)
-        with p2:
-            st.info("""
-            **📖 遠藤洋氏の格言:**
-            『まわりの人が **「まだ怪しい」** と言っている時は **買い**。
-            **「みんな使っている」** と言い始めたら **売り**。』
-            """)
-
         # --- 📢 CM・広告戦略の早期察知 ＆ SNSトレンド分析 ---
         st.markdown("---")
         st.markdown("### 📢 CM・広告戦略の早期察知 ＆ SNSトレンド分析 (個別・手動確認用)")
@@ -3549,10 +3534,11 @@ with tab_guide:
 with tab3:
     with st.container(border=True):
         st.markdown("""
-        ### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
-        当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
+### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
+当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
+""", unsafe_allow_html=True)
 
-        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
+        st.markdown("""<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
 <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
   <thead>
     <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
@@ -3595,37 +3581,51 @@ with tab3:
     </tr>
   </tbody>
 </table>
-</div>
+</div>""", unsafe_allow_html=True)
 
-        ---
+        st.markdown("""
+---
 
-        ### 📖 『小型株集中投資で1億円』の選定メソッド完全まとめ
+### 📖 『小型株集中投資で1億円』の選定メソッド完全まとめ
 
-        #### 1. 1年以内に3倍以上になる成長株 8つのチェックポイント (書籍P.1)
-        1. **上場して5年以内の会社** (初々しく成長余力が大きい)
-        2. **時価総額が小さい (300億円以下)** (大企業と違い、身軽に数倍・十倍化が可能)
-        3. **創業社長が現役** (情熱と意思決定のスピードが圧倒的)
-        4. **社長や経営幹部が大株主** (経営陣の利益と株主の利益が完全一致)
-        5. **高学歴の新卒社員がいる** (成長企業には優秀な若者が集まる)
-        6. **社員の平均年齢が若い** (20代〜30代前半。活気と柔軟性がある)
-        7. **みんなが欲しいと思う商品を提供している** (中学生でもわかるシンプルな需要)
-        8. **株価チャートが上昇トレンド** (25日・75日移動平均線上向き。下降トレンドは絶対NG)
+#### 1. 1年以内に3倍以上になる成長株 8つのチェックポイント (書籍P.1)
+1. **上場して5年以内の会社** (初々しく成長余力が大きい)
+2. **時価総額が小さい (300億円以下)** (大企業と違い、身軽に数倍・十倍化が可能)
+3. **創業社長が現役** (情熱と意思決定のスピードが圧倒的)
+4. **社長や経営幹部が大株主** (経営陣の利益と株主の利益が完全一致)
+5. **高学歴の新卒社員がいる** (成長企業には優秀な若者が集まる)
+6. **社員の平均年齢が若い** (20代〜30代前半。活気と柔軟性がある)
+7. **みんなが欲しいと思う商品を提供している** (中学生でもわかるシンプルな需要)
+8. **株価チャートが上昇トレンド** (25日・75日移動平均線上向き。下降トレンドは絶対NG)
 
-        #### 2. イノベーター理論による売買タイミング (書籍P.13〜19)
-        * **買い時**: 「アーリーアダプター期 (初期採用者)」が手を伸ばすタイミング。企業が広告に力を入れ始め、キャズム (普及率16%) を超える直前。
-        * **売り時**: 「アーリーマジョリティ」から「レイトマジョリティ」に推移する手前。一般人が熱狂し、ワイドショーやSNSで大騒ぎされた時。
-        * **金言**: **『まわりが慎重なら「買い」、まわりが興味を持ったら「売り」』**
+---
 
-        #### 3. 株式投資でやってはいけない8つのこと (書籍P.20)
-        * ❌ 分散投資はやってはいけない (少額資金なら1〜3銘柄に集中)
-        * ❌ 下がった株を持ち続けてはいけない (-10〜20%で即損切り)
-        * ❌ 有名な大企業の株は買ってはいけない
-        * ❌ 株価を見て株を買ってはいけない
-        * ❌ Twitterで盛り上がっている株を買ってはいけない (イナゴ買い厳禁)
-        * ❌ 理解できない株を買ってはいけない
-        * ❌ 銀行や証券会社がすすめる投資信託を買ってはいけない
-        * ❌ 他人に預ける投資はやってはいけない
-        """, unsafe_allow_html=True)
+#### 2. 💡 イノベーター理論による売買タイミング 普及フェーズ判定 (書籍P.13〜19)
+* **【買い時】アーリーアダプター期 (初期採用者)**:
+  アンテナの高い感度の良い人が使い始めた段階。世間の認知はまだ「怪しい」「一部の流行」。企業がCM・広告に力を入れ始め、キャズム（普及率16%）を超える直前。**株価急騰の初動！**
+* **【売り時】レイトマジョリティ期 (後期追随者)**:
+  普段新しいものを使わない一般層や保守層まで知れ渡った段階。一般人が熱狂し、ワイドショーやSNSで大騒ぎされた時。株価はすでに織り込み済みで天井圏のリスク大。
+""")
+
+        st.info("""
+**📖 遠藤洋氏の格言:**
+『まわりの人が **「まだ怪しい」** と言っている時は **買い**。
+**「みんな使っている」** と言い始めたら **売り**。』
+""")
+
+        st.markdown("""
+---
+
+#### 3. 株式投資でやってはいけない8つのこと (書籍P.20)
+* ❌ 分散投資はやってはいけない (少額資金なら1〜3銘柄に集中)
+* ❌ 下がった株を持ち続けてはいけない (-10〜20%で即損切り)
+* ❌ 有名な大企業の株は買ってはいけない
+* ❌ 株価を見て株を買ってはいけない
+* ❌ Twitterで盛り上がっている株を買ってはいけない (イナゴ買い厳禁)
+* ❌ 理解できない株を買ってはいけない
+* ❌ 銀行や証券会社がすすめる投資信託を買ってはいけない
+* ❌ 他人に預ける投資はやってはいけない
+""")
 
 
 # ==========================================

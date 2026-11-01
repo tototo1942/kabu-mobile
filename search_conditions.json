@@ -1,0 +1,21 @@
+{
+  "mcap_max": 300.0,
+  "rev_growth_min": 20.0,
+  "insider_min": 20.0,
+  "filter_trend_up": false,
+  "filter_young_age": false,
+  "filter_debt_free": false,
+  "filter_pe_max": false,
+  "filter_dip": false,
+  "filter_high_growth": false,
+  "filter_tenbagger": false,
+  "filter_under_10man": false,
+  "market_growth": true,
+  "market_standard": true,
+  "market_prime": false,
+  "market_regional": false,
+  "market_pro_other": false,
+  "show_conditions": true,
+  "keyword": "",
+  "selected_genres": []
+}

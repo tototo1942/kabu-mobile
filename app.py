@@ -43,14 +43,79 @@ SETTINGS_FILE = os.path.join(BASE_DIR, "search_conditions.json")
 STATUS_FILE = os.path.join(BASE_DIR, "stock_status.json")
 WATCHLIST_FILE = os.path.join(BASE_DIR, "watchlist.json")
 NOTES_FILE = os.path.join(BASE_DIR, "stock_notes.json")
+APP_ICON_FILE = os.path.join(BASE_DIR, "apple-touch-icon.png")
 
 # ページ基本設定（スマホ画面向けに初期サイドバーを折りたたみに設定）
 st.set_page_config(
-    page_title="小型株集中投資ダッシュボード (Mobile) | 遠藤洋式",
-    page_icon="📱",
+    page_title="TOTOTO-KABU | 小型株集中投資ダッシュボード",
+    page_icon="📈",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+# ==========================================
+# スマホ ホーム画面アイコン ＆ PWAメタタグ動的注入
+# ==========================================
+if os.path.exists(APP_ICON_FILE):
+    import base64
+    with open(APP_ICON_FILE, "rb") as _icon_f:
+        _icon_b64 = base64.b64encode(_icon_f.read()).decode("utf-8")
+    
+    st.markdown(f"""
+    <head>
+        <link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,{_icon_b64}">
+        <link rel="icon" type="image/png" sizes="192x192" href="data:image/png;base64,{_icon_b64}">
+        <meta name="apple-mobile-web-app-title" content="TOTOTO-KABU">
+        <meta name="application-name" content="TOTOTO-KABU">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    </head>
+    <script>
+        (function() {{
+            try {{
+                var doc = window.parent.document || document;
+                var head = doc.getElementsByTagName('head')[0];
+                if (!head) return;
+
+                // Apple Touch Icon の注入・更新
+                var appleIcon = doc.querySelector("link[rel='apple-touch-icon']");
+                if (!appleIcon) {{
+                    appleIcon = doc.createElement('link');
+                    appleIcon.rel = 'apple-touch-icon';
+                    head.appendChild(appleIcon);
+                }}
+                appleIcon.href = 'data:image/png;base64,{_icon_b64}';
+
+                // 一般ファビコンの更新
+                var favIcon = doc.querySelector("link[rel='icon']");
+                if (favIcon) {{
+                    favIcon.href = 'data:image/png;base64,{_icon_b64}';
+                }}
+
+                // アプリタイトルメタタグ
+                var metaAppleTitle = doc.querySelector("meta[name='apple-mobile-web-app-title']");
+                if (!metaAppleTitle) {{
+                    metaAppleTitle = doc.createElement('meta');
+                    metaAppleTitle.name = 'apple-mobile-web-app-title';
+                    head.appendChild(metaAppleTitle);
+                }}
+                metaAppleTitle.content = 'TOTOTO-KABU';
+
+                var metaAppName = doc.querySelector("meta[name='application-name']");
+                if (!metaAppName) {{
+                    metaAppName = doc.createElement('meta');
+                    metaAppName.name = 'application-name';
+                    head.appendChild(metaAppName);
+                }}
+                metaAppName.content = 'TOTOTO-KABU';
+
+                // ドキュメントタイトル
+                doc.title = 'TOTOTO-KABU';
+            }} catch(e) {{}}
+        }})();
+    </script>
+    """, unsafe_allow_html=True)
+
 
 # ==========================================
 # 高視認性・完全ライトモードCSSの注入
@@ -1513,7 +1578,7 @@ if hasattr(st, "dialog"):
     @st.dialog("⚠️ 上級者向け拡張設定（市場規模・特定テーマ）の確認")
     def show_advanced_market_dialog():
         st.warning("""
-        **【遠藤洋式・小型株集中投資の基本原則からの逸脱注意】**
+        **【小型株集中投資の基本原則からの逸脱注意】**
         
         本アプリの基本方針は、**『時価総額300億円以下（理想は100億〜200億円）の身軽な小型成長株』** に集中投資することで1年で3倍以上の急騰を狙う点にあります。
         
@@ -1711,7 +1776,7 @@ with st.sidebar.container(border=True):
             "🏢 企業規模（時価総額レンジ）",
             options=["小型株のみ (〜300億円・原則)", "中型株も含む (〜1,000億円)", "大型株も含む (全規模)"],
             index=0 if st.session_state.mcap_max <= 300.0 else (1 if st.session_state.mcap_max <= 1000.0 else 2),
-            help="遠藤洋式は『小型株のみ』が原則です。"
+            help="小型株集中投資の基本方針は『小型株のみ』が原則です。"
         )
         if market_size_option == "小型株のみ (〜300億円・原則)":
             st.session_state.mcap_max = 300.0
@@ -1756,7 +1821,7 @@ with st.sidebar.container(border=True):
             save_current_conditions()
             st.rerun()
 
-        if st.button("🔒 小型株・原則モードに戻して閉じる", use_container_width=True, help="上級者設定を閉じ、遠藤洋式の基本である小型株集中投資（300億円以下）に復帰します"):
+        if st.button("🔒 小型株・原則モードに戻して閉じる", use_container_width=True, help="上級者設定を閉じ、基本方針である小型株集中投資（300億円以下）に復帰します"):
             st.session_state.unlocked_advanced_market = False
             st.session_state.selected_genres = []
             st.session_state.mcap_max = 300.0
@@ -1937,10 +2002,10 @@ if os.path.exists(header_banner_path):
 st.markdown("""
 <div style="background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 60%, #2563EB 100%); padding: 16px 20px; border-radius: 12px; margin-top: 8px; margin-bottom: 18px; box-shadow: 0 4px 12px rgba(15,23,42,0.15); border: 1.5px solid #3B82F6;">
     <div class="header-title-text" style="font-size: 1.5rem; font-weight: 800; color: #FFFFFF !important; letter-spacing: -0.5px; line-height: 1.25;">
-        🚀 遠藤洋式 小型株集中投資ダッシュボード
+        🚀 TOTOTO-KABU
     </div>
     <div class="header-sub-text" style="margin-top: 8px; font-size: 0.90rem;">
-        著書『10万円から始める！ 小型株集中投資で1億円』完全準拠 ｜ 1年以内に3倍を狙う本命銘柄を瞬時に厳選
+        小型株集中投資ダッシュボード ｜ 時価総額300億円以下・高成長・新世代スクリーナー
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -2269,7 +2334,7 @@ def render_stock_deep_dive(idx, tab1_df):
         st.markdown("### 🤖 AI深掘りリサーチ用プロンプト (最優先推奨)")
         st.caption("下の **「📋 プロンプトをワンクリックでコピー」** ボタンを押すとクリップボードに自動保存されます。そのままAIチャットに貼り付けて送信（Ctrl+V）するだけで、AI（専用スキル）がSNS評判・CM広告・有報・自社株売り・イノベーター理論・チャート動向を全自動で徹底裏取り調査します。")
 
-        prompt_text = f"""あなたは敏腕株式アナリスト兼投資家・遠藤洋氏のエキスパートAIです。
+        prompt_text = f"""あなたは敏腕株式アナリスト兼小型成長株集中投資のエキスパートAIです。
 以下の銘柄について、リアルタイムWeb検索（Google検索機能）をフル稼働し、適時開示・SNSの生の声・CM出稿・最新チャートを徹底的に裏取り調査して、指定された【出力フォーマット】に従ってA4用紙2〜3枚相当の徹底深掘りレポートを作成してください。
 
 【厳格な指示ルール】
@@ -2295,7 +2360,7 @@ def render_stock_deep_dive(idx, tab1_df):
 
 【必ず以下のフォーマット通りに出力してください】
 
-# 📊 【遠藤洋式・銘柄深掘りリサーチレポート】 [{stock_code}] {stock_name}
+# 📊 【TOTOTO-KABU・銘柄深掘りリサーチレポート】 [{stock_code}] {stock_name}
 
 ## ⚡【最重要】FXチャート・テクニカル視点でのエントリー現在地診断
 1. **突発的な急騰に対する「全戻し（イナゴタワー崩壊）」リスクの有無**
@@ -2325,7 +2390,7 @@ def render_stock_deep_dive(idx, tab1_df):
 * **推定感情比率**: ポジティブ 〇〇% ｜ ネガティブ 〇〇%
 * **主なポジティブな生の声（利用者のリアルな口コミ引用・評価ポイント）**
 * **注意すべき不満・ネガティブな生の声（不満点・価格・業界懸念）**
-* **遠藤式・定性評価（みんなが欲しがっているか・認知拡大の兆候）**
+* **定性評価（みんなが欲しがっているか・認知拡大の兆候）**
 
 ## 3. CM・広告戦略の開始状況 (買い時シグナル検証)
 * **広告展開の状況**: （Meta広告、YouTube CM、PR TIMES、TVCM、タクシー広告等の出稿状況）
@@ -2340,7 +2405,7 @@ def render_stock_deep_dive(idx, tab1_df):
 * **現在の普及フェーズ**: （イノベーター期 / ★アーリーアダプター期 (買い時) / キャズム超え / レイトマジョリティ期 (売り時・過熱)）
 * **判定の根拠**: （『まわりが慎重なら買い、まわりが興味を持ったら売り』に照らした評価）
 
-## 6. 遠藤洋式 総合投資判断 ＆ リスク管理
+## 6. 総合投資判断 ＆ リスク管理
 * **集中投資おすすめ度**: ★★★★☆ (〇.〇 / 5.0)
 * **総合評価**: （強みと今後の見通しの総括）
 * **想定される大化けシナリオ (2〜3倍余地)**: （時価総額〇〇億円、株価〇〇円を目指す成長ストーリー）
@@ -3382,7 +3447,7 @@ with tab5:
             
             * **配当利回り**: 株価に対して、年間何％の配当金がもらえるかの利回り。
             * **自社株買い**: 企業が自分のお金で市場の自社株を買い戻して消却し、1株の価値を直接引き上げる施策。
-            * **遠藤洋式の視点（小型成長株の本質）**:
+            * **小型株集中投資の視点（小型成長株の本質）**:
               * 初心者は「配当利回り4%」などの高配当株を好みますが、**「株価が2倍〜3倍になる小型成長株」を狙う場合、配当金は無配（0円）や低配当で十分**です。
               * なぜなら、利益を配当として配ってしまうより、新規出店や開発費、広告CMに全額再投資して売上を何倍にも急拡大させてくれた方が、結果的に株価が何倍にもなって投資家の利益が圧倒的に大きくなるからです。
             """)
@@ -3405,3 +3470,20 @@ with tab5:
               * ピザのサイズ（会社の価値）が同じまま、ピースの数だけ増やすようなものなので、**「1株あたりの利益や価値が薄まる（希薄化・ダイリューション）」** ため、発表直後は株価が急落しやすいリスクがあります。
               * ※ただし、集めた資金で大型M&Aや爆発的成長を遂げる「前向きな増資」の場合は、後から株価が急回復することもあります。
             """)
+
+# ==========================================
+# 公式免責事項 ＆ リファレンスフッター (コンプライアンス表記)
+# ==========================================
+st.markdown("""
+<div style="text-align: center; color: #64748B; font-size: 0.80rem; line-height: 1.7; padding: 28px 12px 16px 12px; margin-top: 36px; border-top: 1px solid #E2E8F0;">
+    <div style="font-weight: 800; color: #1E293B; font-size: 0.95rem; margin-bottom: 6px;">
+        🚀 TOTOTO-KABU
+    </div>
+    <div>小型成長株スクリーナー ＆ 集中投資分析ダッシュボード</div>
+    <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 8px;">
+        ※本ツールの選定基準および指標ロジックは、書籍『10万円から始める！小型株集中投資で1億円』（遠藤洋 著）の公開メソッドを参考に、個人の学習・研究目的で実装された非公式ツールです。<br>
+        特定の銘柄の売買を推奨または保証するものではありません。実際の投資判断はご自身の責任において行ってください。
+    </div>
+</div>
+""", unsafe_allow_html=True)
+

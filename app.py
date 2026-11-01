@@ -378,35 +378,34 @@ st.markdown("""
     }
 
     /* ==========================================
-       タブメニューの完全高視認性デザイン（Fixed絶対固定・最高特異度純白文字）
+       タブメニューの完全高視認性デザイン（Sticky上部固定・濃紺グラデーション帯・純白文字）
        ========================================== */
-    /* タブメニューを画面最上端に完全固定（StickyではなくFixedで親要素のoverflowを完全無視） */
+    /* タブヘッダーの最上部Sticky固定（常にトップに吸着常駐） */
     div[data-testid="stTabs"] > div:first-child {
-        position: fixed !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
         top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100vw !important;
         z-index: 999999 !important;
-        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
-        padding: 8px 10px !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
-        margin: 0 !important;
-        box-sizing: border-box !important;
+        background-color: #FFFFFF !important;
+        padding: 4px 0 8px 0 !important;
+        margin-bottom: 8px !important;
     }
 
-    /* タブバーの帯本体 */
+    /* 濃紺グラデーションのタブバー帯本体（白背景化を完全防止） */
+    div[data-testid="stTabs"] > div:first-child > div,
     div[data-testid="stTabs"] [role="tablist"],
     div[data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-baseweb="tab-list"] {
+        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
+        padding: 6px 10px !important;
+        border: 2px solid #2563EB !important;
+        border-radius: 12px !important;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.4) !important;
         scrollbar-width: none !important;
         -webkit-overflow-scrolling: touch !important;
     }
@@ -414,12 +413,6 @@ st.markdown("""
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
         display: none !important;
         height: 0 !important;
-    }
-
-    /* タブ固定に伴い、コンテンツが下に潜り込まないよう余白を確保 */
-    div[data-testid="stTabs"] > div:last-child,
-    div[data-testid="stTabContent"] {
-        margin-top: 60px !important;
     }
 
     /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */
@@ -548,6 +541,18 @@ st.markdown("""
         pointer-events: none !important;
         width: 0 !important;
         height: 0 !important;
+    }
+
+        /* IRボタンの完全白抜き文字保証 */
+    a.custom-ir-btn,
+    a.custom-ir-btn:link,
+    a.custom-ir-btn:visited,
+    a.custom-ir-btn:hover,
+    a.custom-ir-btn:active,
+    a.custom-ir-btn *,
+    a.custom-ir-btn span {
+        color: #FFFFFF !important;
+        text-decoration: none !important;
     }
 
     /* ==========================================
@@ -2599,7 +2604,7 @@ def render_stock_deep_dive(idx, tab1_df):
         
         st.markdown(f"""
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 16px 0;">
-            <a href="{kabutan_ir_url}" target="_blank" style="
+            <a href="{kabutan_ir_url}" target="_blank" class="custom-ir-btn" style="
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2611,14 +2616,14 @@ def render_stock_deep_dive(idx, tab1_df):
                 border-radius: 8px;
                 font-weight: 700;
                 font-size: 0.90rem;
-                text-decoration: none;
+                text-decoration: none !important;
                 box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
                 box-sizing: border-box;
                 text-align: center;
             ">
-                📑 決算・IR業績 (株探)
+                <span style="color: #FFFFFF !important; font-weight: 700;">📑 決算・IR業績 (株探)</span>
             </a>
-            <a href="{official_ir_url}" target="_blank" style="
+            <a href="{official_ir_url}" target="_blank" class="custom-ir-btn" style="
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -2630,12 +2635,12 @@ def render_stock_deep_dive(idx, tab1_df):
                 border-radius: 8px;
                 font-weight: 700;
                 font-size: 0.90rem;
-                text-decoration: none;
+                text-decoration: none !important;
                 box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);
                 box-sizing: border-box;
                 text-align: center;
             ">
-                🌐 公式IRサイト (説明資料)
+                <span style="color: #FFFFFF !important; font-weight: 700;">🌐 公式IRサイト (説明資料)</span>
             </a>
         </div>
         """, unsafe_allow_html=True)
@@ -3196,38 +3201,26 @@ with tab1:
                         """, height=0, width=0)
                         st.toast(f"✅ コード【{cur_code}】をクリップボードにコピーしました！", icon="📋")
 
-                st.caption("💡 左端の「選択」チェックボックスをOFFにするか、上の「一覧に戻る」ボタンで全候補銘柄一覧に戻ります。")
+                st.caption("💡 上の「⬅️ 全候補銘柄一覧に戻る」ボタンを押すと、いつでも全一覧に戻ることができます。")
 
-                # チェックされた1行のみのDataFrameを作成（選択列をTrueにしてON状態を保持）
                 single_display_df = display_df.iloc[[pos]].copy()
-                single_display_df.insert(0, "選択", True)
 
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
-                edited_single = st.data_editor(
+                st.dataframe(
                     single_display_df,
                     use_container_width=True,
                     hide_index=True,
-                    column_config=editor_column_config,
-                    disabled=valid_cols,
-                    key=f"editor_single_{cur_code}"
+                    column_config=table_column_config,
+                    key=f"df_single_{cur_code}"
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                # チェックボックスがOFFに外された場合、全一覧に復帰
-                # ※メモ更新等で仕分け列に📝マークが付いてテーブルが再描画された際のリセット誤作動を完全防止！
-                # ユーザーが実際にdata_editor上でチェックを外した時（edited_rowsが存在する時）のみ発火
-                ed_state = st.session_state.get(f"editor_single_{cur_code}", {})
-                ed_rows = ed_state.get("edited_rows", {}) if isinstance(ed_state, dict) else {}
-                if 0 in ed_rows and ed_rows[0].get("選択") is False:
-                    st.session_state.selected_stock_code = None
-                    st.rerun()
-
-                # チェックされた銘柄の直下に深掘り分析カードを展開
+                # 選択された銘柄の直下に深掘り分析カードを展開
                 render_stock_deep_dive(pos, tab1_df)
 
             else:
                 # ==========================================
-                # 【チェックOFF時：全候補銘柄一覧を表示】
+                # 【全候補銘柄一覧を表示：セルタップで即座に選択】
                 # ==========================================
                 h_col1, h_col2 = st.columns([2.5, 2.5])
                 with h_col1:
@@ -3255,19 +3248,17 @@ with tab1:
                         </span>
                     </div>
                     """, unsafe_allow_html=True)
-                st.caption("💡 行の「選択」チェックボックスをONにすると、その銘柄のみの表示に切り替わり直下に深掘り分析が表示されます。")
-
-                all_display_df = display_df.copy()
-                all_display_df.insert(0, "選択", False)
+                st.caption("💡 銘柄の行（セルどこでも）をタッチすると、その銘柄のみの表示に切り替わり直下に深掘り分析が表示されます。")
 
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
-                edited_all = st.data_editor(
-                    all_display_df,
+                selection_event = st.dataframe(
+                    display_df,
                     use_container_width=True,
                     hide_index=True,
-                    column_config=editor_column_config,
-                    disabled=valid_cols,
-                    key="editor_all_stocks"
+                    column_config=table_column_config,
+                    on_select="rerun",
+                    selection_mode="single-row",
+                    key="df_all_stocks"
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -3280,11 +3271,11 @@ with tab1:
                     use_container_width=True
                 )
 
-                # いずれかの行がチェックされたか検知
-                checked_rows = edited_all[edited_all["選択"] == True]
-                if not checked_rows.empty:
-                    checked_idx = checked_rows.index[0]
-                    st.session_state.selected_stock_code = str(tab1_df.loc[checked_idx, "コード"])
+                # 行（セル）がタップ選択されたか検知
+                selected_rows = selection_event.selection.rows if selection_event else []
+                if len(selected_rows) > 0:
+                    selected_idx = selected_rows[0]
+                    st.session_state.selected_stock_code = str(tab1_df.iloc[selected_idx]["コード"])
                     st.rerun()
 
 

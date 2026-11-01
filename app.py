@@ -154,7 +154,7 @@ if os.path.exists(APP_ICON_FILE):
                     // タブ文字の純白強制ルーチン
                     selectors.forEach(function(sel) {{}});
                     try {{
-                        var tabs = d.querySelectorAll('[data-testid="stTabs"] button, [data-testid="stTabs"] [role="tab"], [data-testid="stTabs"] [data-baseweb="tab"]');
+                        var tabs = d.querySelectorAll('[data-testid="stTabs"] [role="tablist"] button, div[data-baseweb="tab-list"] button');
                         for (var ti = 0; ti < tabs.length; ti++) {{
                             var t = tabs[ti];
                             var isSel = t.getAttribute('aria-selected') === 'true';
@@ -418,21 +418,67 @@ st.markdown("""
         cursor: pointer !important;
     }
 
-    /* タブ内すべての文字・子要素を純白（#FFFFFF）に完全強制 */
-    [data-testid="stTabs"] *,
-    [data-testid="stTabs"] button,
-    [data-testid="stTabs"] button *,
-    [data-testid="stTabs"] [role="tab"],
-    [data-testid="stTabs"] [role="tab"] *,
-    [data-testid="stTabs"] [data-baseweb="tab"],
-    [data-testid="stTabs"] [data-baseweb="tab"] *,
-    [data-testid="stTabs"] p,
-    [data-testid="stTabs"] span,
-    [data-testid="stTabs"] div,
-    div[data-baseweb="tab-list"] * {
+    /* タブバー（帯）の中のボタンと文字だけを純白に指定 */
+    [data-testid="stTabs"] [role="tablist"] button *,
+    [data-testid="stTabs"] [role="tablist"] button p,
+    [data-testid="stTabs"] [role="tablist"] button span,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button *,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button p,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button span,
+    div[data-baseweb="tab-list"] button *,
+    div[data-baseweb="tab-list"] button p,
+    div[data-baseweb="tab-list"] button span {
         color: #FFFFFF !important;
         font-weight: 700 !important;
         font-size: 0.92rem !important;
+    }
+
+    /* 選択中（アクティブ）タブの文字は濃紺（#0F172A） */
+    [data-testid="stTabs"] [role="tablist"] button[aria-selected="true"] *,
+    [data-testid="stTabs"] [data-baseweb="tab-list"] button[aria-selected="true"] *,
+    div[data-baseweb="tab-list"] button[aria-selected="true"] * {
+        color: #0F172A !important;
+        font-weight: 800 !important;
+    }
+
+    /* タブコンテンツ領域（パネル内部）の文字色を本来の濃紺・黒に強制固定 */
+    div[data-testid="stTabContent"],
+    div[role="tabpanel"],
+    div[data-baseweb="tab-panel"] {
+        color: #0F172A !important;
+    }
+    div[data-testid="stTabContent"] p,
+    div[data-testid="stTabContent"] h1,
+    div[data-testid="stTabContent"] h2,
+    div[data-testid="stTabContent"] h3,
+    div[data-testid="stTabContent"] h4,
+    div[data-testid="stTabContent"] h5,
+    div[data-testid="stTabContent"] h6 {
+        color: #0F172A !important;
+    }
+
+    /* ラジオボタンの文字色を濃紺・太字に完全固定 */
+    div[data-testid="stRadio"] label,
+    div[data-testid="stRadio"] label p,
+    div[data-testid="stRadio"] label span,
+    div[data-testid="stRadio"] [data-testid="stMarkdownContainer"] p {
+        color: #0F172A !important;
+        font-weight: 700 !important;
+    }
+
+    /* キャプション・説明文の文字色 */
+    .stCaption, [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] p {
+        color: #475569 !important;
+    }
+
+    /* 検索条件バッジ・該当社数の文字色 */
+    .filter-label {
+        color: #1E3A8A !important;
+    }
+    .filter-tag {
+        color: #1E40AF !important;
+        background-color: #DBEAFE !important;
+        border: 1px solid #93C5FD !important;
     }
 
     /* タブのホバー時：白く輝く */

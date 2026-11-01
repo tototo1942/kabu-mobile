@@ -111,6 +111,42 @@ if os.path.exists(APP_ICON_FILE):
 
                 // ドキュメントタイトル
                 doc.title = 'TOTOTO-KABU';
+
+                // Streamlit Cloud 特有の不要なバッジ・管理ボタンの抹消ルーチン
+                function hideCloudBadges() {
+                    var selectors = [
+                        '[data-testid="stManageApp"]',
+                        '[data-testid="manage-app-button"]',
+                        '.viewerBadge_container__1QSob',
+                        'div[class*="viewerBadge"]',
+                        'div[class*="manageApp"]',
+                        'div[class*="stAppDeployButton"]',
+                        'header[data-testid="stHeader"] [data-testid="stToolbar"]',
+                        'header[data-testid="stHeader"]'
+                    ];
+                    var docs = [document];
+                    try {
+                        if (window.parent && window.parent.document && window.parent.document !== document) {
+                            docs.push(window.parent.document);
+                        }
+                    } catch(e) {}
+
+                    docs.forEach(function(d) {
+                        selectors.forEach(function(sel) {
+                            try {
+                                var nodes = d.querySelectorAll(sel);
+                                for (var i = 0; i < nodes.length; i++) {
+                                    nodes[i].style.setProperty('display', 'none', 'important');
+                                    nodes[i].style.setProperty('visibility', 'hidden', 'important');
+                                    nodes[i].style.setProperty('height', '0px', 'important');
+                                    nodes[i].style.setProperty('opacity', '0', 'important');
+                                }
+                            } catch(e) {}
+                        });
+                    });
+                }
+                hideCloudBadges();
+                setInterval(hideCloudBadges, 800);
             }} catch(e) {{}}
         }})();
     </script>
@@ -122,11 +158,43 @@ if os.path.exists(APP_ICON_FILE):
 # ==========================================
 st.markdown("""
 <style>
+    /* ==========================================
+       Streamlit Cloud 不要UI要素の完全根こそぎ消去
+       ========================================== */
+    #MainMenu {visibility: hidden !important; display: none !important;}
+    header[data-testid="stHeader"] {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+    [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stDecoration"] {display: none !important; visibility: hidden !important;}
+    [data-testid="stStatusWidget"] {display: none !important; visibility: hidden !important;}
+    footer {visibility: hidden !important; display: none !important;}
+    button[data-testid="stDeployButton"] {display: none !important; visibility: hidden !important;}
+    div[class*="viewerBadge"] {display: none !important; visibility: hidden !important;}
+    div[data-testid="stManageApp"] {display: none !important; visibility: hidden !important;}
+    div[class*="manageApp"] {display: none !important; visibility: hidden !important;}
+    div[class*="stAppDeployButton"] {display: none !important; visibility: hidden !important;}
+    div[data-testid="stBottomBlockContainer"] {display: none !important;}
+    iframe[title*="streamlit"] {display: none !important;}
+    .viewerBadge_container__1QSob {display: none !important;}
+
     /* 全体背景を純白に固定し、文字色を濃紺・黒に強制 */
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    html, body, [data-testid="stAppViewContainer"] {
         background-color: #FFFFFF !important;
         color: #0F172A !important;
     }
+
+    /* Android Chrome Sticky対策：親スクロールコンテナのoverflow正常化 */
+    [data-testid="stAppViewContainer"] {
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+    }
+    section.main {
+        overflow: visible !important;
+    }
+
     
     /* サイドバーの背景 */
     [data-testid="stSidebar"] {
@@ -235,30 +303,36 @@ st.markdown("""
     }
 
     /* ==========================================
-       立体ピル型タブ ＆ 画面上部吸着・固定表示（Sticky Header）
+       立体ピル型タブ ＆ 完全独立ナビゲーションバー（青背景×白地）
        ========================================== */
     [data-testid="stTabs"] {
-        position: relative;
+        position: -webkit-sticky !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 9999 !important;
         margin-bottom: 20px !important;
+        background-color: #FFFFFF !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
     }
     
     [data-testid="stTabs"] [role="tablist"] {
         position: -webkit-sticky !important;
         position: sticky !important;
-        top: 2.85rem !important; /* スクロール時に画面上部にピタッと固定 */
-        z-index: 999 !important;
-        background: #FFFFFF !important;
+        top: 0 !important;
+        z-index: 9999 !important;
+        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important; /* 濃紺〜ロイヤルブルーの独立バー帯 */
         display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
         padding: 8px 10px 10px 8px !important;
-        border: 1px solid #CBD5E1 !important;
+        border: 2px solid #2563EB !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.25) !important;
         scrollbar-width: thin !important;
-        scrollbar-color: #94A3B8 #E2E8F0 !important;
+        scrollbar-color: #60A5FA #1E293B !important;
         -webkit-overflow-scrolling: touch !important;
     }
 
@@ -267,15 +341,15 @@ st.markdown("""
         height: 5px !important;
     }
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track {
-        background: #E2E8F0 !important;
+        background: #1E293B !important;
         border-radius: 10px !important;
     }
     [data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb {
-        background: #94A3B8 !important;
+        background: #60A5FA !important;
         border-radius: 10px !important;
     }
 
-    /* 各タブボタン：立体感のある角丸カード */
+    /* 各タブボタン：独立バー内の半透明ピル（白地・白テキスト） */
     [data-testid="stTabs"] button[role="tab"] {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
@@ -283,28 +357,28 @@ st.markdown("""
         border-radius: 8px !important;
         font-weight: 700 !important;
         font-size: 0.88rem !important;
-        color: #475569 !important;
-        background-color: #FFFFFF !important;
-        border: 1.5px solid #CBD5E1 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04) !important;
+        color: #F8FAFC !important; /* 純白テキスト */
+        background-color: rgba(255, 255, 255, 0.12) !important;
+        border: 1px solid rgba(255, 255, 255, 0.25) !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
         transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
         cursor: pointer !important;
     }
 
-    /* タブのホバー時：浮き上がり */
+    /* タブのホバー時：白く輝く */
     [data-testid="stTabs"] button[role="tab"]:hover {
-        color: #1E40AF !important;
+        color: #FFFFFF !important;
         border-color: #93C5FD !important;
-        background-color: #EFF6FF !important;
+        background-color: rgba(255, 255, 255, 0.28) !important;
         transform: translateY(-2px) !important;
     }
 
-    /* 選択中（アクティブ）タブ：鮮やかなロイヤルブルー ＋ 白文字 ＋ 立体浮遊シャドウ */
+    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 ＋ 浮遊シャドウ */
     [data-testid="stTabs"] button[role="tab"][aria-selected="true"] {
-        color: #FFFFFF !important;
-        background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%) !important;
-        border: 1.5px solid #1D4ED8 !important;
-        box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35) !important;
+        color: #0F172A !important; /* 濃紺文字でクッキリ視認 */
+        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important; /* 鮮やかなゴールド */
+        border: 1.5px solid #FCD34D !important;
+        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.5) !important;
         font-weight: 800 !important;
         transform: translateY(-1px) !important;
     }
@@ -1723,22 +1797,22 @@ st.sidebar.markdown("## 🎛️ 投資条件フィルター")
 # 目的別おすすめプリセットボタン群
 with st.sidebar.container(border=True):
     st.markdown("### 🎯 目的別おすすめパターン")
-    st.caption("投資スタイルに合わせてワンクリックで適正件数（10〜25社）を厳選抽出します。")
+    st.caption("投資スタイルと厳格度（★4〜★6）に合わせてワンクリックで抽出します。")
 
-    if st.button("👑 王道の集中投資型 (約15社)", use_container_width=True, help="書籍推奨の理想5大条件。バランス抜群の本命銘柄"):
+    if st.button("🔥 全条件クリア 【究極★6】 (1社〜)", use_container_width=True, help="【厳格度: ★★★★★★】11個の全条件を妥協なく100点満点で全クリした奇跡の超お宝銘柄"):
+        set_preset_full_comp()
+        st.rerun()
+
+    if st.button("👑 王道・集中投資型 【本命★5】 (約15社)", use_container_width=True, help="【厳格度: ★★★★★】書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
         set_preset_endo_standard()
         st.rerun()
 
-    if st.button("🛡️ 堅実安全・押し目買い型 (約20社)", use_container_width=True, help="実質無借金 × 適正PER(40倍以下) × 調整した押し目銘柄"):
+    if st.button("🛡️ 堅実安全・押し目型 【安全★4】 (約20社)", use_container_width=True, help="【厳格度: ★★★★☆】実質無借金 × 適正PER(40倍以下) × 調整した押し目銘柄。大損を防ぐ守りの設定"):
         set_preset_safe_dip()
         st.rerun()
 
-    if st.button("🚀 爆発的テンバガー狙い型 (約12社)", use_container_width=True, help="売上+30%超 × 3年後2倍試算の急加速成長銘柄"):
+    if st.button("🚀 テンバガー狙い型 【急成長★4.5】 (約12社)", use_container_width=True, help="【厳格度: ★★★★☆+】売上+30%超 × 3年後2倍試算。10倍株の爆発力を持つ企業を狙い撃つ設定"):
         set_preset_tenbagger()
-        st.rerun()
-
-    if st.button("🔥 全条件クリア・超お宝型 (1社〜)", use_container_width=True, help="11個の厳格条件を奇跡的に全クリした究極の掘り出し銘柄"):
-        set_preset_full_comp()
         st.rerun()
 
     st.markdown("---")
@@ -2442,7 +2516,7 @@ def render_stock_deep_dive(idx, tab1_df):
 
         prompt_json = json.dumps(prompt_text)
 
-        # プロンプト文の上に被らない、完全に独立した大型コピーボタン
+        # プロンプト文の上に被らない、完全に独立した大型コピーボタン（見切れゼロ・2段表示）
         copy_html = f"""
         <div style="margin: 0; padding: 2px 0;">
             <button id="copyPromptBtn" onclick="copyToClipboard()" style="
@@ -2450,22 +2524,24 @@ def render_stock_deep_dive(idx, tab1_df):
                 background: linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%);
                 color: white;
                 border: none;
-                padding: 12px 14px;
+                padding: 10px 14px;
                 font-size: 15px;
-                line-height: 1.35;
+                line-height: 1.4;
                 font-weight: 700;
                 border-radius: 8px;
                 cursor: pointer;
                 display: flex;
+                flex-direction: column;
                 align-items: center;
                 justify-content: center;
                 text-align: center;
-                gap: 8px;
+                gap: 2px;
                 box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                 transition: all 0.2s ease;
                 box-sizing: border-box;
             ">
-                📋 このプロンプトをワンクリックでコピー
+                <span>📋 このプロンプトを</span>
+                <span>ワンクリックでコピー</span>
             </button>
         </div>
         <script>
@@ -2474,19 +2550,19 @@ def render_stock_deep_dive(idx, tab1_df):
             const btn = document.getElementById("copyPromptBtn");
 
             function setSuccess() {{
-                btn.innerHTML = "✅ コピー完了！Geminiに貼り付けて送信してください (Ctrl+V)";
+                btn.innerHTML = "<span>✅ コピー完了！</span><span>AIチャットに貼り付けて送信してください (Ctrl+V)</span>";
                 btn.style.background = "#16A34A";
                 setTimeout(function() {{
-                    btn.innerHTML = "📋 このプロンプトをワンクリックでコピー";
+                    btn.innerHTML = "<span>📋 このプロンプトを</span><span>ワンクリックでコピー</span>";
                     btn.style.background = "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)";
                 }}, 3500);
             }}
 
             function setFailure() {{
-                btn.innerHTML = "⚠️ 下の枠内から手動コピーしてください";
+                btn.innerHTML = "<span>⚠️ コピー失敗</span><span>下の枠内から手動コピーしてください</span>";
                 btn.style.background = "#DC2626";
                 setTimeout(function() {{
-                    btn.innerHTML = "📋 このプロンプトをワンクリックでコピー";
+                    btn.innerHTML = "<span>📋 このプロンプトを</span><span>ワンクリックでコピー</span>";
                     btn.style.background = "linear-gradient(135deg, #1D4ED8 0%, #2563EB 100%)";
                 }}, 3500);
             }}
@@ -2530,7 +2606,7 @@ def render_stock_deep_dive(idx, tab1_df):
         }}
         </script>
         """
-        components.html(copy_html, height=72)
+        components.html(copy_html, height=78)
 
         with st.expander("📄 生成されたプロンプト本文（確認・手動コピー用）", expanded=False):
             st.code(prompt_text, language="markdown")
@@ -3084,7 +3160,20 @@ with tab2:
 with tab3:
     with st.container(border=True):
         st.markdown("""
-        ### 📖 遠藤洋氏『小型株集中投資で1億円』の選定メソッド完全まとめ
+        ### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
+        当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
+
+        | パターン名 | 準拠度・厳格度 | 該当社数目安 | 基準の厳しさと狙い |
+        | :--- | :---: | :---: | :--- |
+        | **🔥 全条件クリア・超お宝型** | **★★★★★★<br>(究極・奇跡のフルコンプ)** | **1社〜数社**<br>(時期により0社) | **全11条件を100点満点で全クリした奇跡の銘柄**。<br>（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも*「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」*とされる極限の絞り込みです。 |
+        | **👑 ① 王道・集中投資型** | **★★★★★<br>(最も厳格・理想の本命)** | **約10〜20社** | **書籍P.1の理想5大条件を厳密適用**。<br>時価総額200億以下、売上+20%以上、社長30%以上、無借金、上昇トレンド。<br>最も再現性が高く、投資メソッドの真髄となる本命パターンです。 |
+        | **🛡️ ② 堅実安全・押し目型** | **★★★★☆<br>(手堅い安全重視)** | 約15〜25社 | 基本条件に「割安PER × 高値から下がった押し目」を掛け合わせ、高値掴みを防いで安く仕込む守りの設定です。 |
+        | **🚀 ③ テンバガー狙い型** | **★★★★☆+<br>(超高成長特化)** | 約10〜15社 | 売上成長率を「+30%以上」に引き上げ、10倍株（テンバガー）の爆発力を持つ企業のみを狙い撃つ攻撃的設定です。 |
+        | **📋 デフォルト（初期状態）** | **★★★☆☆<br>(基本合格ライン)** | 全126社 | 時価総額300億円以下、売上+20%以上、社長比率20%以上。<br>最低合格ラインをクリアした全銘柄を広く見渡すための母集団です。 |
+
+        ---
+
+        ### 📖 『小型株集中投資で1億円』の選定メソッド完全まとめ
 
         #### 1. 1年以内に3倍以上になる成長株 8つのチェックポイント (書籍P.1)
         1. **上場して5年以内の会社** (初々しく成長余力が大きい)

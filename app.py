@@ -378,34 +378,35 @@ st.markdown("""
     }
 
     /* ==========================================
-       タブメニューの完全高視認性デザイン（Sticky固定・純白文字・端白アイコン消去）
+       タブメニューの完全高視認性デザイン（Fixed絶対固定・最高特異度純白文字）
        ========================================== */
-    /* タブヘッダーの最上部Sticky固定（常にトップに常駐） */
+    /* タブメニューを画面最上端に完全固定（StickyではなくFixedで親要素のoverflowを完全無視） */
     div[data-testid="stTabs"] > div:first-child {
-        position: -webkit-sticky !important;
-        position: sticky !important;
+        position: fixed !important;
         top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100vw !important;
         z-index: 999999 !important;
-        background-color: #FFFFFF !important;
-        padding: 4px 0 8px 0 !important;
-        margin-bottom: 8px !important;
+        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
+        padding: 8px 10px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
     }
 
-    /* 濃紺グラデーションのタブバー帯本体 */
-    div[data-testid="stTabs"] > div:first-child > div,
+    /* タブバーの帯本体 */
     div[data-testid="stTabs"] [role="tablist"],
     div[data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-baseweb="tab-list"] {
-        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
         flex-wrap: nowrap !important;
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
-        padding: 6px 8px !important;
-        border: 2px solid #2563EB !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.4) !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
         scrollbar-width: none !important;
         -webkit-overflow-scrolling: touch !important;
     }
@@ -413,6 +414,12 @@ st.markdown("""
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
         display: none !important;
         height: 0 !important;
+    }
+
+    /* タブ固定に伴い、コンテンツが下に潜り込まないよう余白を確保 */
+    div[data-testid="stTabs"] > div:last-child,
+    div[data-testid="stTabContent"] {
+        margin-top: 60px !important;
     }
 
     /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */
@@ -435,30 +442,43 @@ st.markdown("""
     div[data-testid="stTabs"] > div:first-child button {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
-        padding: 8px 16px !important;
+        padding: 6px 14px !important;
         border-radius: 8px !important;
-        background-color: rgba(255, 255, 255, 0.22) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.5) !important;
+        background-color: rgba(255, 255, 255, 0.20) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
         cursor: pointer !important;
         margin: 2px 0 !important;
     }
 
-    /* タブバー内部のあらゆる文字を絶対に純白（#FFFFFF）に強制固定！ */
-    div[data-testid="stTabs"] > div:first-child * {
+    /* 【最高詳細度セレクタ】タブ内のすべての文字を例外なく純白（#FFFFFF）に強制固定！ */
+    html body div[data-testid="stTabs"] button p,
+    html body div[data-testid="stTabs"] button span,
+    html body div[data-testid="stTabs"] button div,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"] p,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"] span,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"] div,
+    html body div[data-testid="stTabs"] [role="tab"] p,
+    html body div[data-testid="stTabs"] [role="tab"] span,
+    html body div[data-testid="stTabs"] > div:first-child * {
         color: #FFFFFF !important;
         font-weight: 700 !important;
-        font-size: 0.92rem !important;
+        font-size: 0.90rem !important;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 選択中（アクティブ）タブ：ゴールド背景 ＋ 濃紺文字 */
+    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 */
     div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] {
         background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
         border: 1.5px solid #FCD34D !important;
         box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6) !important;
     }
-    div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
+    html body div[data-testid="stTabs"] button[aria-selected="true"] p,
+    html body div[data-testid="stTabs"] button[aria-selected="true"] span,
+    html body div[data-testid="stTabs"] button[aria-selected="true"] div,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] span,
+    html body div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
         color: #0F172A !important;
         font-weight: 800 !important;
         text-shadow: none !important;

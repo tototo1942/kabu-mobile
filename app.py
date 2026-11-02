@@ -2145,35 +2145,80 @@ def set_preset_full_comp():
 # 🎛️ 案B：投資条件フィルター・ポップアップダイアログ (st.dialog)
 # ==========================================
 if hasattr(st, "dialog"):
-    @st.dialog("🎛️ 投資条件フィルター ＆ プリセット設定", width="large")
+    @st.dialog("🎛️ 投資条件フィルター ＆ 詳細設定", width="large")
     def show_filter_dialog():
-        st.markdown("### 🎯 目的別おすすめパターン (4大プリセット)")
-        st.caption("投資スタイルに合わせてワンクリックで抽出します。")
-        p_c1, p_c2 = st.columns(2)
-        with p_c1:
-            if st.button("🔥 全条件クリア 【究極★6】", use_container_width=True, help="11個の全条件を妥協なく全クリした奇跡の超お宝銘柄"):
-                set_preset_full_comp()
-                st.rerun()
-            if st.button("👑 王道・集中投資型 【本命★5】", use_container_width=True, help="書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
-                set_preset_endo_standard()
-                st.rerun()
-        with p_c2:
-            if st.button("🛡️ 堅実安全・押し目型 【安全★4】", use_container_width=True, help="実質無借金 × 適正PER × 調整した押し目銘柄"):
-                set_preset_safe_dip()
-                st.rerun()
-            if st.button("🚀 テンバガー狙い型 【急成長★4.5】", use_container_width=True, help="売上+30%超 × 3年後2倍試算。10倍株の爆発力"):
-                set_preset_tenbagger()
-                st.rerun()
+        dlg_tab_basic, dlg_tab_adv = st.tabs([
+            "🎯 基本条件 ＆ 4大プリセット",
+            "🛠️ 上級者設定（市場・規模・テーマ）"
+        ])
 
-        st.markdown("---")
-        st.markdown("### 🛠️ 上級者向け拡張設定 🔒")
-        if not st.session_state.get("unlocked_advanced_market", False):
-            st.caption("🔒 普段は原則である『小型成長株 集中投資モード (300億以下)』に固定されています。")
-            if st.button("🔓 上級者設定を開く（全市場・規模・テーマ）", use_container_width=True):
-                st.session_state.unlocked_advanced_market = True
-                st.rerun()
-        else:
-            st.caption("⚠️ 特定テーマ（防衛等）や中大型株を分析するための応用機能です。")
+        with dlg_tab_basic:
+            st.markdown("##### 🎯 目的別おすすめパターン (4大プリセット)")
+            st.caption("投資スタイルに合わせてワンクリックで抽出します。")
+            p_c1, p_c2 = st.columns(2)
+            with p_c1:
+                if st.button("🔥 全条件クリア 【究極★6】", use_container_width=True, help="11個の全条件を妥協なく全クリした奇跡の超お宝銘柄"):
+                    set_preset_full_comp()
+                    st.rerun()
+                if st.button("👑 王道・集中投資型 【本命★5】", use_container_width=True, help="書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
+                    set_preset_endo_standard()
+                    st.rerun()
+            with p_c2:
+                if st.button("🛡️ 堅実安全・押し目型 【安全★4】", use_container_width=True, help="実質無借金 × 適正PER × 調整した押し目銘柄"):
+                    set_preset_safe_dip()
+                    st.rerun()
+                if st.button("🚀 テンバガー狙い型 【急成長★4.5】", use_container_width=True, help="売上+30%超 × 3年後2倍試算。10倍株の爆発力"):
+                    set_preset_tenbagger()
+                    st.rerun()
+
+            st.markdown("---")
+            st.markdown("##### 📌 8大チェック ＆ スライダー調整")
+            dlg_trend = st.checkbox("📈 上昇トレンド 🚀 のみ（必須級）", value=st.session_state.filter_trend_up, key="dlg_f_trend")
+            dlg_mcap = st.slider("時価総額の上限 (億円)", min_value=10.0, max_value=300.0, value=float(st.session_state.mcap_max), step=10.0, key="dlg_f_mcap")
+            dlg_rev = st.slider("売上高成長率の下限 (%)", min_value=10.0, max_value=100.0, value=float(st.session_state.rev_growth_min), step=5.0, key="dlg_f_rev")
+            dlg_insider = st.slider("創業者・役員比率の下限 (%)", min_value=0.0, max_value=80.0, value=float(st.session_state.insider_min), step=5.0, key="dlg_f_insider")
+            dlg_young = st.checkbox("👥 社員の平均年齢 35歳以下", value=st.session_state.filter_young_age, key="dlg_f_young")
+            dlg_under10 = st.checkbox("💰 10万円以下で買える株 (100株少額投資)", value=st.session_state.filter_under_10man, key="dlg_f_under10")
+
+            st.markdown("---")
+            st.markdown("##### 🛡️ 投資判断ブースター")
+            b_c1, b_c2 = st.columns(2)
+            with b_c1:
+                dlg_debt = st.checkbox("実質無借金のみ", value=st.session_state.filter_debt_free, key="dlg_b_debt")
+                dlg_pe = st.checkbox("適正PER (40倍以下)", value=st.session_state.filter_pe_max, key="dlg_b_pe")
+                dlg_dip = st.checkbox("押し目買い圏 (-10%〜-35%)", value=st.session_state.filter_dip, key="dlg_b_dip")
+            with b_c2:
+                dlg_hgrowth = st.checkbox("超高成長 (+30%以上)", value=st.session_state.filter_high_growth, key="dlg_b_hgrowth")
+                dlg_tenbagger = st.checkbox("3年後成長試算 2倍以上", value=st.session_state.filter_tenbagger, key="dlg_b_tenbagger")
+
+            dlg_kw = st.text_input("🔍 キーワード検索", value=st.session_state.keyword_input, key="dlg_f_kw")
+
+            st.markdown("---")
+            b_btn1, b_btn2 = st.columns(2)
+            with b_btn1:
+                if st.button("✅ 条件を確定して一覧を見る", type="primary", use_container_width=True, key="dlg_btn_apply_basic"):
+                    st.session_state.filter_trend_up = dlg_trend
+                    st.session_state.mcap_max = float(dlg_mcap)
+                    st.session_state.rev_growth_min = float(dlg_rev)
+                    st.session_state.insider_min = float(dlg_insider)
+                    st.session_state.filter_young_age = dlg_young
+                    st.session_state.filter_under_10man = dlg_under10
+                    st.session_state.filter_debt_free = dlg_debt
+                    st.session_state.filter_pe_max = dlg_pe
+                    st.session_state.filter_dip = dlg_dip
+                    st.session_state.filter_high_growth = dlg_hgrowth
+                    st.session_state.filter_tenbagger = dlg_tenbagger
+                    st.session_state.keyword_input = dlg_kw
+                    save_current_conditions()
+                    st.rerun()
+            with b_btn2:
+                if st.button("🔄 全フィルター解除 (デフォルト126社)", use_container_width=True, key="dlg_btn_clear_basic"):
+                    clear_all_filters()
+                    st.rerun()
+
+        with dlg_tab_adv:
+            st.markdown("##### 🏛️ 対象市場・中大型株・テーマ設定")
+            st.caption("⚠️ 特定テーマ（防衛等）や中大型株を分析するための上級者向け応用機能です。")
             m_col1, m_col2 = st.columns(2)
             with m_col1:
                 dlg_growth = st.checkbox("グロース", value=st.session_state.market_growth, key="dlg_m_growth")
@@ -2182,7 +2227,7 @@ if hasattr(st, "dialog"):
             with m_col2:
                 dlg_standard = st.checkbox("スタンダード", value=st.session_state.market_standard, key="dlg_m_standard")
                 dlg_regional = st.checkbox("地方市場 (名証/札証/福証)", value=st.session_state.get("market_regional", True), key="dlg_m_regional")
-            
+
             dlg_size = st.radio(
                 "🏢 企業規模（時価総額レンジ）",
                 options=["小型株のみ (〜300億円・原則)", "中型株も含む (〜1,000億円)", "大型株も含む (全規模)"],
@@ -2195,78 +2240,37 @@ if hasattr(st, "dialog"):
                 default=st.session_state.get("selected_genres", []),
                 key="dlg_m_genres"
             )
-            if st.button("🎯 上級者条件を確定して適用", type="primary", use_container_width=True):
-                st.session_state.market_growth = dlg_growth
-                st.session_state.market_standard = dlg_standard
-                st.session_state.market_prime = dlg_prime
-                st.session_state.market_regional = dlg_regional
-                st.session_state.market_pro_other = dlg_pro
-                st.session_state.selected_genres = dlg_genres
-                if dlg_size == "小型株のみ (〜300億円・原則)":
+            st.markdown("---")
+            adv_btn1, adv_btn2 = st.columns(2)
+            with adv_btn1:
+                if st.button("🎯 上級者条件を確定して適用", type="primary", use_container_width=True, key="dlg_btn_apply_adv"):
+                    st.session_state.market_growth = dlg_growth
+                    st.session_state.market_standard = dlg_standard
+                    st.session_state.market_prime = dlg_prime
+                    st.session_state.market_regional = dlg_regional
+                    st.session_state.market_pro_other = dlg_pro
+                    st.session_state.selected_genres = dlg_genres
+                    if dlg_size == "小型株のみ (〜300億円・原則)":
+                        st.session_state.mcap_max = 300.0
+                    elif dlg_size == "中型株も含む (〜1,000億円)":
+                        st.session_state.mcap_max = 1000.0
+                    elif dlg_size == "大型株も含む (全規模)":
+                        st.session_state.mcap_max = 999999.0
+                    st.session_state.unlocked_advanced_market = True
+                    save_current_conditions()
+                    st.rerun()
+            with adv_btn2:
+                if st.button("🔒 小型株・原則モードに戻す", use_container_width=True, key="dlg_btn_reset_adv"):
+                    st.session_state.unlocked_advanced_market = False
+                    st.session_state.selected_genres = []
                     st.session_state.mcap_max = 300.0
-                elif dlg_size == "中型株も含む (〜1,000億円)":
-                    st.session_state.mcap_max = 1000.0
-                elif dlg_size == "大型株も含む (全規模)":
-                    st.session_state.mcap_max = 999999.0
-                save_current_conditions()
-                st.rerun()
-
-            if st.button("🔒 小型株・原則モードに戻して閉じる", use_container_width=True):
-                st.session_state.unlocked_advanced_market = False
-                st.session_state.selected_genres = []
-                st.session_state.mcap_max = 300.0
-                st.session_state.market_growth = True
-                st.session_state.market_standard = True
-                st.session_state.market_prime = False
-                st.session_state.market_regional = False
-                st.session_state.market_pro_other = False
-                save_current_conditions()
-                st.rerun()
-
-        st.markdown("---")
-        st.markdown("### 📌 8大チェック ＆ スライダー調整")
-        dlg_trend = st.checkbox("📈 上昇トレンド 🚀 のみ（必須級）", value=st.session_state.filter_trend_up, key="dlg_f_trend")
-        dlg_mcap = st.slider("時価総額の上限 (億円)", min_value=10.0, max_value=300.0, value=float(st.session_state.mcap_max), step=10.0, key="dlg_f_mcap")
-        dlg_rev = st.slider("売上高成長率の下限 (%)", min_value=10.0, max_value=100.0, value=float(st.session_state.rev_growth_min), step=5.0, key="dlg_f_rev")
-        dlg_insider = st.slider("創業者・役員比率の下限 (%)", min_value=0.0, max_value=80.0, value=float(st.session_state.insider_min), step=5.0, key="dlg_f_insider")
-        dlg_young = st.checkbox("👥 社員の平均年齢 35歳以下", value=st.session_state.filter_young_age, key="dlg_f_young")
-        dlg_under10 = st.checkbox("💰 10万円以下で買える株 (100株少額投資)", value=st.session_state.filter_under_10man, key="dlg_f_under10")
-
-        st.markdown("---")
-        st.markdown("### 🛡️ 投資判断ブースター")
-        b_c1, b_c2 = st.columns(2)
-        with b_c1:
-            dlg_debt = st.checkbox("実質無借金のみ", value=st.session_state.filter_debt_free, key="dlg_b_debt")
-            dlg_pe = st.checkbox("適正PER (40倍以下)", value=st.session_state.filter_pe_max, key="dlg_b_pe")
-            dlg_dip = st.checkbox("押し目買い圏 (-10%〜-35%)", value=st.session_state.filter_dip, key="dlg_b_dip")
-        with b_c2:
-            dlg_hgrowth = st.checkbox("超高成長 (+30%以上)", value=st.session_state.filter_high_growth, key="dlg_b_hgrowth")
-            dlg_tenbagger = st.checkbox("3年後成長試算 2倍以上", value=st.session_state.filter_tenbagger, key="dlg_b_tenbagger")
-
-        dlg_kw = st.text_input("🔍 キーワード検索", value=st.session_state.keyword_input, key="dlg_f_kw")
-
-        st.markdown("---")
-        b_btn1, b_btn2 = st.columns(2)
-        with b_btn1:
-            if st.button("✅ 条件を確定して一覧を見る", type="primary", use_container_width=True):
-                st.session_state.filter_trend_up = dlg_trend
-                st.session_state.mcap_max = float(dlg_mcap)
-                st.session_state.rev_growth_min = float(dlg_rev)
-                st.session_state.insider_min = float(dlg_insider)
-                st.session_state.filter_young_age = dlg_young
-                st.session_state.filter_under_10man = dlg_under10
-                st.session_state.filter_debt_free = dlg_debt
-                st.session_state.filter_pe_max = dlg_pe
-                st.session_state.filter_dip = dlg_dip
-                st.session_state.filter_high_growth = dlg_hgrowth
-                st.session_state.filter_tenbagger = dlg_tenbagger
-                st.session_state.keyword_input = dlg_kw
-                save_current_conditions()
-                st.rerun()
-        with b_btn2:
-            if st.button("🔄 全フィルター解除 (デフォルト126社)", use_container_width=True):
-                clear_all_filters()
-                st.rerun()
+                    st.session_state.market_growth = True
+                    st.session_state.market_standard = True
+                    st.session_state.market_prime = False
+                    st.session_state.market_regional = False
+                    st.session_state.market_pro_other = False
+                    save_current_conditions()
+                    st.rerun()
 
     @st.dialog("🔄 銘柄データベース更新 ＆ スクリーニング", width="medium")
     def show_data_refresh_dialog():
@@ -4019,40 +4023,27 @@ with tab1:
 
         df["エントリー判定"] = df.apply(get_quick_entry_signal, axis=1)
 
-        # 上部：仕分け表示フィルター切替 ＆ 件数バッジ
+        # 上部：仕分け表示フィルター切替 ＆ 件数インライン集約
         all_codes = df["コード"].astype(str).tolist()
         watch_cnt = sum(1 for c in all_codes if st.session_state.stock_status.get(c, {}).get("status") == "watching")
         ex_cnt = sum(1 for c in all_codes if st.session_state.stock_status.get(c, {}).get("status") == "excluded")
-        un_cnt = len(all_codes) - watch_cnt - ex_cnt
+        valid_cnt = len(all_codes) - ex_cnt
 
-        filter_box1, filter_box2 = st.columns([3, 2])
-        with filter_box1:
-            status_filter = st.radio(
-                label="🎯 銘柄の仕分けフィルター:",
-                options=["🛡️ 除外を隠す (推奨・ノイズゼロ)", "⭐️ 監視中のみ表示", "📋 すべて表示 (除外含む)"],
-                horizontal=True,
-                key="tab1_status_filter_radio"
-            )
-        with filter_box2:
-            st.markdown(f"""
-            <div style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; padding-top: 10px;">
-                <span style="background-color: #FEF3C7; color: #92400E; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid #FCD34D;">⭐️ 監視中: {watch_cnt}社</span>
-                <span style="background-color: #FEE2E2; color: #991B1B; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid #FCA5A5;">❌ 対象外: {ex_cnt}社</span>
-                <span style="background-color: #F1F5F9; color: #475569; padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; border: 1px solid #CBD5E1;">⚪ 未判定: {un_cnt}社</span>
-            </div>
-            """, unsafe_allow_html=True)
+        opt_hide_ex = f"🛡️ 除外隠す ({valid_cnt}社)"
+        opt_watching = f"⭐️ 監視中 ({watch_cnt}社)"
+        opt_show_all = f"📋 すべて ({len(all_codes)}社)"
+        status_options = [opt_hide_ex, opt_watching, opt_show_all]
 
-        # フィルター適用
-        if "除外を隠す" in status_filter:
-            tab1_df = df[df["コード"].astype(str).map(lambda c: st.session_state.stock_status.get(c, {}).get("status")) != "excluded"].copy()
-        elif "監視中のみ" in status_filter:
-            tab1_df = df[df["コード"].astype(str).map(lambda c: st.session_state.stock_status.get(c, {}).get("status")) == "watching"].copy()
-        else:
-            tab1_df = df.copy()
+        # セッションキャッシュの後方互換整合性調整
+        if "tab1_status_filter_radio" in st.session_state:
+            curr_val = str(st.session_state.tab1_status_filter_radio)
+            if "監視中" in curr_val:
+                st.session_state.tab1_status_filter_radio = opt_watching
+            elif "すべて" in curr_val:
+                st.session_state.tab1_status_filter_radio = opt_show_all
+            else:
+                st.session_state.tab1_status_filter_radio = opt_hide_ex
 
-        # ==========================================
-        # 🎯 【統合案A】表示・並び替えスマートビュー（絞り込み ＆ 最適ソート統合・完全永続保持）
-        # ==========================================
         smart_view_options = [
             "🏢 【標準】全社表示（押し目買い好機優先 ＆ 時価総額順）",
             "🔥 【トレンド】上昇トレンドのみ（時価総額が小さい順）",
@@ -4061,36 +4052,34 @@ with tab1:
             "💰 【少額投資】10万円以下で買える株のみ（1株価格が安い順）",
             "👑 【オーナー企業】社長・役員が大株主のみ（保有率が高い順）"
         ]
-
         if "smart_view_selection" not in st.session_state or st.session_state.smart_view_selection not in smart_view_options:
             st.session_state.smart_view_selection = smart_view_options[0]
 
-        # 目立つ専用ブルーカード枠でプルダウンを包み込み（見落としを完全防止）
-        st.markdown("""
-        <div style="
-            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-            border: 2.5px solid #2563EB;
-            border-radius: 12px;
-            padding: 12px 16px 8px 16px;
-            margin: 12px 0 14px 0;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
-        ">
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: #1E40AF; font-size: 1.02rem; margin-bottom: 4px;">
-                <span>🎯</span> <span>【目的別】表示・並び替えスマートビュー（絞り込み ＆ 最適ソート）</span>
-            </div>
-            <div style="font-size: 0.82rem; color: #1E3A8A; margin-bottom: 8px; font-weight: 600;">
-                👇 下のメニューから目的を選ぶと、該当銘柄の抽出と最適な並び替えが一括で適用されます（選択は自動保持）：
-            </div>
-        """, unsafe_allow_html=True)
+        # 仕分けとスマートビューを横並び（スマホでは自動縦並び）でコンパクト配置
+        filter_col1, filter_col2 = st.columns([1.1, 1.3])
+        with filter_col1:
+            status_filter = st.radio(
+                label="🎯 仕分け表示:",
+                options=status_options,
+                horizontal=True,
+                key="tab1_status_filter_radio"
+            )
+        with filter_col2:
+            selected_smart_view = st.selectbox(
+                label="🎯 並び替え・スマートビュー:",
+                options=smart_view_options,
+                index=smart_view_options.index(st.session_state.smart_view_selection),
+                key="tab1_smart_view_select"
+            )
 
-        selected_smart_view = st.selectbox(
-            "スマートビュー選択:",
-            options=smart_view_options,
-            index=smart_view_options.index(st.session_state.smart_view_selection),
-            key="tab1_smart_view_select",
-            label_visibility="collapsed"
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+        # フィルター適用
+        if "除外隠す" in status_filter:
+            tab1_df = df[df["コード"].astype(str).map(lambda c: st.session_state.stock_status.get(c, {}).get("status")) != "excluded"].copy()
+        elif "監視中" in status_filter:
+            tab1_df = df[df["コード"].astype(str).map(lambda c: st.session_state.stock_status.get(c, {}).get("status")) == "watching"].copy()
+        else:
+            tab1_df = df.copy()
+
         st.session_state.smart_view_selection = selected_smart_view
 
         # エントリー判定の優先順位スコア関数（押し目好機を先頭、上昇中、高値警戒、調整中の順）

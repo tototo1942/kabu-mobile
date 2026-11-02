@@ -245,14 +245,17 @@ st.markdown("""
         visibility: visible !important;
         opacity: 1 !important;
         pointer-events: auto !important;
+        position: fixed !important;
+        top: 6px !important;
+        left: 6px !important;
         background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
         color: #FFFFFF !important;
-        border: 1.5px solid #1D4ED8 !important;
+        border: 2px solid #FFFFFF !important;
         border-radius: 8px !important;
-        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
-        z-index: 9999999 !important;
-        width: 38px !important;
-        height: 38px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        z-index: 10000000 !important;
+        width: 42px !important;
+        height: 42px !important;
         align-items: center !important;
         justify-content: center !important;
     }
@@ -420,19 +423,18 @@ st.markdown("""
     /* ==========================================
        タブメニューの完全高視認性デザイン（Sticky上部固定・濃紺グラデーション帯・純白文字）
        ========================================== */
-    /* タブメニューをWebトップメニューとして完全常駐固定（スクロール時も最上端にピタッと吸着常駐） */
+    /* タブメニューをWebトップメニューとして完全常駐固定（画面スクロール時も最上端0pxに完全固定） */
     div[data-testid="stTabs"] > div:first-child {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        width: 100% !important;
+        position: fixed !important;
+        top: 0px !important;
+        left: 0px !important;
+        right: 0px !important;
+        width: 100vw !important;
         z-index: 999999 !important;
         background: #0F172A !important; /* 濃紺ソリッド背景でスクロール時の透けを100%遮断 */
         padding: 6px 10px !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
-        margin: 0 0 12px 0 !important;
+        margin: 0 !important;
         box-sizing: border-box !important;
     }
 
@@ -496,15 +498,18 @@ st.markdown("""
         pointer-events: none !important;
     }
 
-    /* タブボタン：非選択時の半透明ピル背景 */
+    /* タブボタン：非選択時も濃紺ソリッド背景で白抜けを完全根絶！ */
+    div[data-testid="stTabs"] button[data-baseweb="tab"],
+    div[data-testid="stTabs"] [role="tab"],
     div[data-testid="stTabs"] > div:first-child button {
         flex: 0 0 auto !important;
         white-space: nowrap !important;
         padding: 6px 14px !important;
         border-radius: 8px !important;
-        background-color: rgba(255, 255, 255, 0.20) !important;
-        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+        background-color: #1E293B !important;
+        background: #1E293B !important;
+        border: 1.5px solid #3B82F6 !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
         cursor: pointer !important;
         margin: 2px 0 !important;
     }
@@ -525,11 +530,14 @@ st.markdown("""
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
     }
 
-    /* 選択中（アクティブ）タブ：鮮やかなゴールド ＋ 濃紺文字 */
+    /* 選択中（アクティブ）タブ：鮮やかなロイヤルブルーグラデーション ＋ 純白文字 */
+    div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
+    div[data-testid="stTabs"] [role="tab"][aria-selected="true"],
     div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] {
-        background: linear-gradient(135deg, #FDE047 0%, #F59E0B 100%) !important;
-        border: 1.5px solid #FCD34D !important;
-        box-shadow: 0 4px 14px rgba(245, 158, 11, 0.6) !important;
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        background-color: #2563EB !important;
+        border: 2px solid #93C5FD !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5) !important;
     }
     html body div[data-testid="stTabs"] button[aria-selected="true"] p,
     html body div[data-testid="stTabs"] button[aria-selected="true"] span,
@@ -537,9 +545,10 @@ st.markdown("""
     html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
     html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] span,
     html body div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
-        color: #0F172A !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         font-weight: 800 !important;
-        text-shadow: none !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
     }
 
     /* デフォルトの青い下線（ハイライト）を完全消去 */
@@ -608,7 +617,7 @@ st.markdown("""
         height: 0 !important;
     }
 
-        /* IRボタンの完全白抜き文字保証 */
+        /* IRボタンの完全白抜き文字保証（訪問済み:visited自動変色を100%遮断） */
     a.custom-ir-btn,
     a.custom-ir-btn:link,
     a.custom-ir-btn:visited,
@@ -617,6 +626,7 @@ st.markdown("""
     a.custom-ir-btn *,
     a.custom-ir-btn span {
         color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         text-decoration: none !important;
     }
 
@@ -2105,6 +2115,7 @@ def set_preset_full_comp():
 # サイドバー（高視認性フィルター操作パネル）
 # ==========================================
 st.sidebar.markdown("## 🎛️ 投資条件フィルター")
+sidebar_badge_box = st.sidebar.container(border=True)
 
 # 目的別おすすめプリセットボタン群
 with st.sidebar.container(border=True):
@@ -2555,6 +2566,34 @@ if selected_genres:
 
 
 # ==========================================
+# サイドバー最上部：現在適用中の条件バッジ ＆ 該当社数 ＆ リセットボタン
+# ==========================================
+with sidebar_badge_box:
+    st.markdown(f'''
+    <div style="font-weight: 800; color: #1D4ED8; font-size: 1.12rem; margin-bottom: 6px;">
+        👉 該当: <strong>{len(df)} 社</strong> / {base_population_label}
+    </div>
+    ''', unsafe_allow_html=True)
+    if active_filters:
+        tags_html = "".join([f'<span class="filter-tag">{f}</span>' for f in active_filters])
+        st.markdown(f'''
+        <div style="margin-bottom: 8px;">
+            <span class="filter-label" style="font-weight: 700; color: #1E3A8A; font-size: 0.85rem;">【適用中の条件】:</span><br>
+            {tags_html}
+        </div>
+        ''', unsafe_allow_html=True)
+    sb_c1, sb_c2 = st.columns(2)
+    with sb_c1:
+        if st.button(f"🔄 全リセット", use_container_width=True, key="sb_box_clear_all", help="すべてのフィルターを解除して全社表示に戻します"):
+            clear_all_filters()
+            st.rerun()
+    with sb_c2:
+        has_undo_sb = bool(st.session_state.get("previous_filter_snapshot"))
+        if st.button("↩️ 取消", use_container_width=True, key="sb_box_undo_clear", disabled=not has_undo_sb, help="直前の絞り込み条件を復元します"):
+            undo_clear_filters()
+            st.rerun()
+
+# ==========================================
 # 深掘りカード描画用コンポーネント関数
 # ==========================================
 def render_stock_deep_dive(idx, tab1_df):
@@ -2686,7 +2725,7 @@ def render_stock_deep_dive(idx, tab1_df):
                 box-sizing: border-box;
                 text-align: center;
             ">
-                <span style="color: #FFFFFF !important; font-weight: 700;">📑 決算・IR業績 (株探)</span>
+                <span style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; font-weight: 700;">📑 決算・IR業績 (株探)</span>
             </a>
             <a href="{official_ir_url}" target="_blank" class="custom-ir-btn" style="
                 display: flex;
@@ -2705,7 +2744,7 @@ def render_stock_deep_dive(idx, tab1_df):
                 box-sizing: border-box;
                 text-align: center;
             ">
-                <span style="color: #FFFFFF !important; font-weight: 700;">🌐 公式IRサイト (説明資料)</span>
+                <span style="color: #FFFFFF !important; -webkit-text-fill-color: #FFFFFF !important; font-weight: 700;">🌐 公式IRサイト (説明資料)</span>
             </a>
         </div>
         """, unsafe_allow_html=True)
@@ -3044,125 +3083,8 @@ with tab1:
         </div>
     </div>
     """, unsafe_allow_html=True)
-    
-    # ==========================================
-    # 検索条件の表示／非表示切り替えバー ＆ 条件バッジ
-    # ==========================================
-    if "show_inline_filter" not in st.session_state:
-        st.session_state.show_inline_filter = False
-
-    c_btn_col1, c_btn_col2, c_btn_col3 = st.columns([1.8, 2.5, 3.1])
-    with c_btn_col1:
-        btn_label = "👁️ 条件バッジを隠す" if st.session_state.show_conditions else "👁️ 条件バッジを表示"
-        if st.button(btn_label, use_container_width=True, help="画面上の条件バッジの表示／非表示を切り替えます"):
-            st.session_state.show_conditions = not st.session_state.show_conditions
-            save_current_conditions()
-            st.rerun()
-    
-    with c_btn_col2:
-        filter_btn_label = "⚙️ 条件設定パネルを閉じる" if st.session_state.show_inline_filter else "⚙️ 投資条件フィルターを変更"
-        if st.button(filter_btn_label, use_container_width=True, key="btn_toggle_inline_filter", help="画面内で時価総額・市場・売上成長率などの条件を変更できます"):
-            st.session_state.show_inline_filter = not st.session_state.show_inline_filter
-            st.rerun()
-    
-    with c_btn_col3:
-        st.caption(f"💾 前回の検索条件が自動保存・復元されています（該当: **{len(df)}社** / {base_population_label}）")
-
-    # 画面内での直接フィルター調整パネル（100%確実に動作・スマホ最適）
-    if st.session_state.show_inline_filter:
-        with st.container(border=True):
-            st.markdown("""
-            <div style="font-weight: 800; color: #1E40AF; font-size: 1.05rem; margin-bottom: 6px;">
-                ⚙️ 投資条件フィルターの変更・微調整（画面内パネル）
-            </div>
-            """, unsafe_allow_html=True)
-            st.caption("💡 スライダーやチェックを変更すると即座に一覧が絞り込まれます（変更内容は自動保存されます）。")
-            
-            # 🎯 以前の4大おすすめプリセットを完全配備！
-            st.markdown("##### 🎯 目的別おすすめパターン（4大プリセット）")
-            st.caption("書籍の選定基準に完全準拠した本命パターンをワンタップで適用できます：")
-            pr_col1, pr_col2 = st.columns(2)
-            with pr_col1:
-                if st.button("👑 王道・集中投資型 (約15社)", use_container_width=True, key="in_btn_preset_endo", help="【厳格度: ★★★★★】書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
-                    set_preset_endo_standard()
-                    st.rerun()
-                if st.button("🔥 全条件クリア (1社〜)", use_container_width=True, key="in_btn_preset_full", help="【厳格度: ★★★★★★】11個の全条件を妥協なく100点満点で全クリした奇跡の超お宝銘柄"):
-                    set_preset_full_comp()
-                    st.rerun()
-            with pr_col2:
-                if st.button("🛡️ 堅実安全・押し目型 (約20社)", use_container_width=True, key="in_btn_preset_safe", help="【厳格度: ★★★★☆】実質無借金 × 適正PER(40倍以下) × 調整した押し目銘柄"):
-                    set_preset_safe_dip()
-                    st.rerun()
-                if st.button("🚀 テンバガー狙い型 (約12社)", use_container_width=True, key="in_btn_preset_tenbagger", help="【厳格度: ★★★★☆+】売上+30%超 × 3年後2倍試算。10倍株狙い撃ち"):
-                    set_preset_tenbagger()
-                    st.rerun()
-
-            st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #BFDBFE;'>", unsafe_allow_html=True)
-            st.markdown("##### 🎛️ 条件スライダー ＆ 詳細絞り込み")
-
-            p_col1, p_col2 = st.columns(2)
-            with p_col1:
-                cur_cap_val = int(st.session_state.get("max_market_cap", 300))
-                new_max_cap = st.slider("🏢 時価総額の上限 (億円)", min_value=50, max_value=500, value=cur_cap_val, step=10, key="inline_slider_max_cap")
-                if new_max_cap != cur_cap_val:
-                    st.session_state.max_market_cap = new_max_cap
-                    save_current_conditions()
-                    st.rerun()
-            with p_col2:
-                cur_growth_val = int(st.session_state.get("min_sales_growth", 0))
-                new_min_rev = st.slider("📈 売上高成長率の下限 (%)", min_value=0, max_value=50, value=cur_growth_val, step=5, key="inline_slider_min_growth")
-                if new_min_rev != cur_growth_val:
-                    st.session_state.min_sales_growth = new_min_rev
-                    save_current_conditions()
-                    st.rerun()
-
-            p_chk1, p_chk2 = st.columns(2)
-            with p_chk1:
-                cur_trend_val = bool(st.session_state.get("chart_uptrend_only", False))
-                new_trend = st.checkbox("🔥 上昇トレンドのみに限定", value=cur_trend_val, key="inline_check_trend")
-                if new_trend != cur_trend_val:
-                    st.session_state.chart_uptrend_only = new_trend
-                    save_current_conditions()
-                    st.rerun()
-            with p_chk2:
-                cur_debt_val = bool(st.session_state.get("filter_debt_free", False))
-                new_debt = st.checkbox("🏦 実質無借金経営のみに限定", value=cur_debt_val, key="inline_check_debt")
-                if new_debt != cur_debt_val:
-                    st.session_state.filter_debt_free = new_debt
-                    save_current_conditions()
-                    st.rerun()
-
-            st.caption("※より詳細な市場選択やPER設定は、画面左上の青い「＞」ボタンを押してサイドバーからも操作可能です。")
-    
-    if st.session_state.show_conditions:
-        tags_html = "".join([f'<span class="filter-tag">{f}</span>' for f in active_filters])
-        with st.container(border=True):
-            st.markdown(f"""
-            <div style="margin-bottom: 8px;">
-                <span class="filter-label" style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem;">【現在適用中の条件】:</span>
-                {tags_html}
-            </div>
-            """, unsafe_allow_html=True)
-            
-            st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #BFDBFE;'>", unsafe_allow_html=True)
-            
-            f_btm_col1, f_btm_col2, f_btm_col3 = st.columns([3.5, 1.2, 1.0])
-            with f_btm_col1:
-                st.markdown(f"""
-                <div style="font-weight: 800; color: #1D4ED8; font-size: 1.08rem; padding-top: 6px;">
-                    👉 該当: <strong>{len(df)} 社</strong> / {base_population_label}
-                </div>
-                """, unsafe_allow_html=True)
-            with f_btm_col2:
-                if st.button(f"🔄 デフォルト (全{default_total_count}社)", use_container_width=True, key="badge_clear_all_mob", help="すべてのフィルターを解除して全社表示に戻します"):
-                    clear_all_filters()
-                    st.rerun()
-            with f_btm_col3:
-                has_undo = bool(st.session_state.get("previous_filter_snapshot"))
-                if st.button("↩️ 取消", use_container_width=True, key="badge_undo_clear_mob", disabled=not has_undo, help="直前の絞り込み条件を復元します"):
-                    undo_clear_filters()
-                    st.rerun()
-    
+    # 投資条件と該当社数は左上の青い「＞」ボタン（サイドバー）内に完全移設
+    st.caption(f"💡 投資条件・上級者設定は画面左上の青い「＞」ボタンからいつでも変更できます（該当: **{len(df)}社** / {base_population_label}）")
     
     if len(df) == 0:
         st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**\n\n上級者設定で対象市場（グロース、スタンダード等）にチェックを入れるか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")

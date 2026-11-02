@@ -183,6 +183,14 @@ if os.path.exists(APP_ICON_FILE):
                         try {{
                             var tabHeader = d.querySelector('div[data-testid="stTabs"] > div:first-child');
                             if (tabHeader) {{
+                                tabHeader.style.setProperty('position', 'fixed', 'important');
+                                tabHeader.style.setProperty('top', '0px', 'important');
+                                tabHeader.style.setProperty('left', '0px', 'important');
+                                tabHeader.style.setProperty('right', '0px', 'important');
+                                tabHeader.style.setProperty('width', '100%', 'important');
+                                tabHeader.style.setProperty('z-index', '9999999', 'important');
+                                tabHeader.style.setProperty('background', '#0F172A', 'important');
+                                tabHeader.style.setProperty('box-shadow', '0 4px 16px rgba(0, 0, 0, 0.5)', 'important');
                                 var allTabTexts = tabHeader.querySelectorAll('*');
                                 for (var ti = 0; ti < allTabTexts.length; ti++) {{
                                     var el = allTabTexts[ti];
@@ -449,20 +457,21 @@ st.markdown("""
         margin: 0 auto !important;
     }
 
-    /* 親コンテナのoverflow制約を解除しStickyの動作を完全保証 */
-    div[data-testid="stTabs"] {
-        overflow: visible !important;
+    /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
+    div[data-testid="stTabs"] > div:last-child,
+    div[data-testid="stTabContent"] {
+        margin-top: 56px !important;
     }
     div.block-container {
-        overflow: visible !important;
-        padding-top: 1rem !important;
-    }
-    section.main, [data-testid="stMain"] {
-        overflow: visible !important;
+        padding-top: 10px !important;
     }
     @media (max-width: 768px) {
+        div[data-testid="stTabs"] > div:last-child,
+        div[data-testid="stTabContent"] {
+            margin-top: 50px !important;
+        }
         div.block-container {
-            padding-top: 0.6rem !important;
+            padding-top: 6px !important;
         }
     }
     div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
@@ -3069,6 +3078,28 @@ with tab1:
             """, unsafe_allow_html=True)
             st.caption("💡 スライダーやチェックを変更すると即座に一覧が絞り込まれます（変更内容は自動保存されます）。")
             
+            # 🎯 以前の4大おすすめプリセットを完全配備！
+            st.markdown("##### 🎯 目的別おすすめパターン（4大プリセット）")
+            st.caption("書籍の選定基準に完全準拠した本命パターンをワンタップで適用できます：")
+            pr_col1, pr_col2 = st.columns(2)
+            with pr_col1:
+                if st.button("👑 王道・集中投資型 (約15社)", use_container_width=True, key="in_btn_preset_endo", help="【厳格度: ★★★★★】書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
+                    set_preset_endo_standard()
+                    st.rerun()
+                if st.button("🔥 全条件クリア (1社〜)", use_container_width=True, key="in_btn_preset_full", help="【厳格度: ★★★★★★】11個の全条件を妥協なく100点満点で全クリした奇跡の超お宝銘柄"):
+                    set_preset_full_comp()
+                    st.rerun()
+            with pr_col2:
+                if st.button("🛡️ 堅実安全・押し目型 (約20社)", use_container_width=True, key="in_btn_preset_safe", help="【厳格度: ★★★★☆】実質無借金 × 適正PER(40倍以下) × 調整した押し目銘柄"):
+                    set_preset_safe_dip()
+                    st.rerun()
+                if st.button("🚀 テンバガー狙い型 (約12社)", use_container_width=True, key="in_btn_preset_tenbagger", help="【厳格度: ★★★★☆+】売上+30%超 × 3年後2倍試算。10倍株狙い撃ち"):
+                    set_preset_tenbagger()
+                    st.rerun()
+
+            st.markdown("<hr style='margin: 8px 0; border: none; border-top: 1px solid #BFDBFE;'>", unsafe_allow_html=True)
+            st.markdown("##### 🎛️ 条件スライダー ＆ 詳細絞り込み")
+
             p_col1, p_col2 = st.columns(2)
             with p_col1:
                 cur_cap_val = int(st.session_state.get("max_market_cap", 300))

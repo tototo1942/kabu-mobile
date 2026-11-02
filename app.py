@@ -2129,6 +2129,153 @@ def set_preset_full_comp():
 
 
 # ==========================================
+
+# ==========================================
+# 🎛️ 案B：投資条件フィルター・ポップアップダイアログ (st.dialog)
+# ==========================================
+if hasattr(st, "dialog"):
+    @st.dialog("🎛️ 投資条件フィルター ＆ プリセット設定", width="large")
+    def show_filter_dialog():
+        st.markdown("### 🎯 目的別おすすめパターン (4大プリセット)")
+        st.caption("投資スタイルに合わせてワンクリックで抽出します。")
+        p_c1, p_c2 = st.columns(2)
+        with p_c1:
+            if st.button("🔥 全条件クリア 【究極★6】", use_container_width=True, help="11個の全条件を妥協なく全クリした奇跡の超お宝銘柄"):
+                set_preset_full_comp()
+                st.rerun()
+            if st.button("👑 王道・集中投資型 【本命★5】", use_container_width=True, help="書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
+                set_preset_endo_standard()
+                st.rerun()
+        with p_c2:
+            if st.button("🛡️ 堅実安全・押し目型 【安全★4】", use_container_width=True, help="実質無借金 × 適正PER × 調整した押し目銘柄"):
+                set_preset_safe_dip()
+                st.rerun()
+            if st.button("🚀 テンバガー狙い型 【急成長★4.5】", use_container_width=True, help="売上+30%超 × 3年後2倍試算。10倍株の爆発力"):
+                set_preset_tenbagger()
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("### 🛠️ 上級者向け拡張設定 🔒")
+        if not st.session_state.get("unlocked_advanced_market", False):
+            st.caption("🔒 普段は原則である『小型成長株 集中投資モード (300億以下)』に固定されています。")
+            if st.button("🔓 上級者設定を開く（全市場・規模・テーマ）", use_container_width=True):
+                st.session_state.unlocked_advanced_market = True
+                st.rerun()
+        else:
+            st.caption("⚠️ 特定テーマ（防衛等）や中大型株を分析するための応用機能です。")
+            m_col1, m_col2 = st.columns(2)
+            with m_col1:
+                dlg_growth = st.checkbox("グロース", value=st.session_state.market_growth, key="dlg_m_growth")
+                dlg_prime = st.checkbox("プライム", value=st.session_state.market_prime, key="dlg_m_prime")
+                dlg_pro = st.checkbox("PRO Market / その他", value=st.session_state.get("market_pro_other", True), key="dlg_m_pro")
+            with m_col2:
+                dlg_standard = st.checkbox("スタンダード", value=st.session_state.market_standard, key="dlg_m_standard")
+                dlg_regional = st.checkbox("地方市場 (名証/札証/福証)", value=st.session_state.get("market_regional", True), key="dlg_m_regional")
+            
+            dlg_size = st.radio(
+                "🏢 企業規模（時価総額レンジ）",
+                options=["小型株のみ (〜300億円・原則)", "中型株も含む (〜1,000億円)", "大型株も含む (全規模)"],
+                index=0 if st.session_state.mcap_max <= 300.0 else (1 if st.session_state.mcap_max <= 1000.0 else 2),
+                key="dlg_m_size"
+            )
+            dlg_genres = st.multiselect(
+                "投資テーマ・ジャンルを選択（複数可）",
+                options=INVESTMENT_THEMES,
+                default=st.session_state.get("selected_genres", []),
+                key="dlg_m_genres"
+            )
+            if st.button("🎯 上級者条件を確定して適用", type="primary", use_container_width=True):
+                st.session_state.market_growth = dlg_growth
+                st.session_state.market_standard = dlg_standard
+                st.session_state.market_prime = dlg_prime
+                st.session_state.market_regional = dlg_regional
+                st.session_state.market_pro_other = dlg_pro
+                st.session_state.selected_genres = dlg_genres
+                if dlg_size == "小型株のみ (〜300億円・原則)":
+                    st.session_state.mcap_max = 300.0
+                elif dlg_size == "中型株も含む (〜1,000億円)":
+                    st.session_state.mcap_max = 1000.0
+                elif dlg_size == "大型株も含む (全規模)":
+                    st.session_state.mcap_max = 999999.0
+                save_current_conditions()
+                st.rerun()
+
+            if st.button("🔒 小型株・原則モードに戻して閉じる", use_container_width=True):
+                st.session_state.unlocked_advanced_market = False
+                st.session_state.selected_genres = []
+                st.session_state.mcap_max = 300.0
+                st.session_state.market_growth = True
+                st.session_state.market_standard = True
+                st.session_state.market_prime = False
+                st.session_state.market_regional = False
+                st.session_state.market_pro_other = False
+                save_current_conditions()
+                st.rerun()
+
+        st.markdown("---")
+        st.markdown("### 📌 8大チェック ＆ スライダー調整")
+        dlg_trend = st.checkbox("📈 上昇トレンド 🚀 のみ（必須級）", value=st.session_state.filter_trend_up, key="dlg_f_trend")
+        dlg_mcap = st.slider("時価総額の上限 (億円)", min_value=10.0, max_value=300.0, value=float(st.session_state.mcap_max), step=10.0, key="dlg_f_mcap")
+        dlg_rev = st.slider("売上高成長率の下限 (%)", min_value=10.0, max_value=100.0, value=float(st.session_state.rev_growth_min), step=5.0, key="dlg_f_rev")
+        dlg_insider = st.slider("創業者・役員比率の下限 (%)", min_value=0.0, max_value=80.0, value=float(st.session_state.insider_min), step=5.0, key="dlg_f_insider")
+        dlg_young = st.checkbox("👥 社員の平均年齢 35歳以下", value=st.session_state.filter_young_age, key="dlg_f_young")
+        dlg_under10 = st.checkbox("💰 10万円以下で買える株 (100株少額投資)", value=st.session_state.filter_under_10man, key="dlg_f_under10")
+
+        st.markdown("---")
+        st.markdown("### 🛡️ 投資判断ブースター")
+        b_c1, b_c2 = st.columns(2)
+        with b_c1:
+            dlg_debt = st.checkbox("実質無借金のみ", value=st.session_state.filter_debt_free, key="dlg_b_debt")
+            dlg_pe = st.checkbox("適正PER (40倍以下)", value=st.session_state.filter_pe_max, key="dlg_b_pe")
+            dlg_dip = st.checkbox("押し目買い圏 (-10%〜-35%)", value=st.session_state.filter_dip, key="dlg_b_dip")
+        with b_c2:
+            dlg_hgrowth = st.checkbox("超高成長 (+30%以上)", value=st.session_state.filter_high_growth, key="dlg_b_hgrowth")
+            dlg_tenbagger = st.checkbox("3年後成長試算 2倍以上", value=st.session_state.filter_tenbagger, key="dlg_b_tenbagger")
+
+        dlg_kw = st.text_input("🔍 キーワード検索", value=st.session_state.keyword_input, key="dlg_f_kw")
+
+        st.markdown("---")
+        b_btn1, b_btn2 = st.columns(2)
+        with b_btn1:
+            if st.button("✅ 条件を確定して一覧を見る", type="primary", use_container_width=True):
+                st.session_state.filter_trend_up = dlg_trend
+                st.session_state.mcap_max = float(dlg_mcap)
+                st.session_state.rev_growth_min = float(dlg_rev)
+                st.session_state.insider_min = float(dlg_insider)
+                st.session_state.filter_young_age = dlg_young
+                st.session_state.filter_under_10man = dlg_under10
+                st.session_state.filter_debt_free = dlg_debt
+                st.session_state.filter_pe_max = dlg_pe
+                st.session_state.filter_dip = dlg_dip
+                st.session_state.filter_high_growth = dlg_hgrowth
+                st.session_state.filter_tenbagger = dlg_tenbagger
+                st.session_state.keyword_input = dlg_kw
+                save_current_conditions()
+                st.rerun()
+        with b_btn2:
+            if st.button("🔄 全フィルター解除 (デフォルト126社)", use_container_width=True):
+                clear_all_filters()
+                st.rerun()
+
+    @st.dialog("🔄 銘柄データベース更新 ＆ スクリーニング", width="medium")
+    def show_data_refresh_dialog():
+        d_str, is_out, d_ago = get_csv_freshness_info()
+        st.markdown(f"### 📅 データ鮮度: **{d_str or '不明'}** ({d_ago}日前)")
+        st.caption("新しいIPO銘柄の追加や、時価総額300億円を超えた卒業銘柄の除外など、候補銘柄リストを最新データで再スクリーニングして更新します。")
+        st.info("💡 全銘柄のスクリーニングには約40秒かかります。完了すると自動で最新データが読み込まれます。")
+        if st.button("🚀 今すぐ最新スクリーニングを実行 (約40秒)", type="primary", use_container_width=True):
+            with st.spinner("全上場銘柄から最新データをスクリーニング中... (約40秒)"):
+                sc_script = os.path.join(BASE_DIR, "screener.py")
+                res = subprocess.run([sys.executable, sc_script], capture_output=True, text=True)
+                st.cache_data.clear()
+                st.toast("✨ 銘柄データを最新に更新しました！", icon="🎉")
+                st.rerun()
+else:
+    def show_filter_dialog():
+        st.toast("お使いの環境ではサイドバーより条件を変更いただけます。")
+    def show_data_refresh_dialog():
+        st.toast("お使いの環境ではサイドバー下部より更新いただけます。")
+
 # サイドバー（高視認性フィルター操作パネル）
 # ==========================================
 st.sidebar.markdown("## 🎛️ 投資条件フィルター")
@@ -3101,7 +3248,19 @@ with tab1:
     </div>
     """, unsafe_allow_html=True)
     # 投資条件と該当社数は左上の青い「＞」ボタン（サイドバー）内に完全移設
-    st.caption(f"💡 投資条件・上級者設定は画面左上の青い「＞」ボタンからいつでも変更できます（該当: **{len(df)}社** / {base_population_label}）")
+    # ==========================================
+    # 🎯 メイン操作バー：投資条件フィルター (案Bポップアップ) ＆ 銘柄データ更新
+    # ==========================================
+    date_str, is_outdated, days_ago = get_csv_freshness_info()
+    refresh_btn_label = f"🔄 銘柄データ更新 ({days_ago}日前)" if date_str else "🔄 銘柄データ更新"
+
+    top_btn_col1, top_btn_col2 = st.columns([1.6, 1.4])
+    with top_btn_col1:
+        if st.button(f"🎛️ 投資条件フィルターを変更 (該当: {len(df)}社)", type="primary", use_container_width=True, help="タップすると4大プリセット、市場・テーマ設定、スライダーをポップアップで変更できます"):
+            show_filter_dialog()
+    with top_btn_col2:
+        if st.button(refresh_btn_label, use_container_width=True, help="タップすると最新のIPOや卒業銘柄を再スクリーニングしてデータを更新できます"):
+            show_data_refresh_dialog()
     
     if len(df) == 0:
         st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**\n\n上級者設定で対象市場（グロース、スタンダード等）にチェックを入れるか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")

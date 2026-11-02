@@ -217,9 +217,41 @@ st.markdown("""
        ========================================== */
     #MainMenu {visibility: hidden !important; display: none !important;}
     header[data-testid="stHeader"] {
+        background: transparent !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        pointer-events: none !important;
+        z-index: 100000 !important;
+    }
+    /* ヘッダー内の不要なツールバーのみを消去 */
+    header[data-testid="stHeader"] [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
-        height: 0 !important;
+    }
+    /* 左上のサイドバー開閉アイコン（>）をスマホでも押しやすく目立つデザインで確実に復元 */
+    button[data-testid="stSidebarCollapsedControl"],
+    button[data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+        color: #FFFFFF !important;
+        border: 1.5px solid #1D4ED8 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3) !important;
+        z-index: 9999999 !important;
+        width: 38px !important;
+        height: 38px !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    button[data-testid="stSidebarCollapsedControl"] svg,
+    button[data-testid="stSidebarCollapseButton"] svg {
+        fill: #FFFFFF !important;
+        color: #FFFFFF !important;
     }
     [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
     [data-testid="stDecoration"] {display: none !important; visibility: hidden !important;}
@@ -380,18 +412,22 @@ st.markdown("""
     /* ==========================================
        タブメニューの完全高視認性デザイン（Sticky上部固定・濃紺グラデーション帯・純白文字）
        ========================================== */
-    /* タブヘッダーの最上部Sticky固定（常にトップに吸着常駐） */
+    /* タブメニューをWebトップメニューとして完全常駐固定（画面スクロール時も最上端に固定） */
     div[data-testid="stTabs"] > div:first-child {
-        position: -webkit-sticky !important;
-        position: sticky !important;
+        position: fixed !important;
         top: 0 !important;
-        z-index: 999999 !important;
-        background-color: #FFFFFF !important;
-        padding: 4px 0 8px 0 !important;
-        margin-bottom: 8px !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 99999 !important;
+        background: #0F172A !important; /* 濃紺ソリッド背景でコンテンツの透けを完全防止 */
+        padding: 6px 10px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+        margin: 0 !important;
+        box-sizing: border-box !important;
     }
 
-    /* 濃紺グラデーションのタブバー帯本体（白背景化を完全防止） */
+    /* 濃紺グラデーションのタブバー帯本体 */
     div[data-testid="stTabs"] > div:first-child > div,
     div[data-testid="stTabs"] [role="tablist"],
     div[data-testid="stTabs"] [data-baseweb="tab-list"],
@@ -402,12 +438,24 @@ st.markdown("""
         overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
-        padding: 6px 10px !important;
-        border: 2px solid #2563EB !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.4) !important;
+        padding: 4px 8px !important;
+        border: 1.5px solid #2563EB !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
         scrollbar-width: none !important;
         -webkit-overflow-scrolling: touch !important;
+        max-width: 1200px !important;
+        margin: 0 auto !important;
+    }
+
+    /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
+    .block-container {
+        padding-top: 58px !important;
+    }
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 54px !important;
+        }
     }
     div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
@@ -2983,7 +3031,7 @@ with tab1:
     # ==========================================
     # 検索条件の表示／非表示切り替えバー ＆ 条件バッジ
     # ==========================================
-    c_btn_col1, c_btn_col2 = st.columns([1.8, 4.2])
+    c_btn_col1, c_btn_col2, c_btn_col3 = st.columns([2.0, 2.2, 3.2])
     with c_btn_col1:
         btn_label = "👁️ 条件バッジを隠す" if st.session_state.show_conditions else "👁️ 条件バッジを表示"
         if st.button(btn_label, use_container_width=True, help="画面上の条件バッジの表示／非表示を切り替えます"):
@@ -2992,6 +3040,15 @@ with tab1:
             st.rerun()
     
     with c_btn_col2:
+        if st.button("⚙️ 投資条件フィルターを変更", use_container_width=True, key="btn_open_filter_sidebar", help="サイドバーの条件設定（時価総額スライダー・成長率等）を開きます"):
+            st.components.v1.html("""
+            <script>
+                var sbBtn = window.parent.document.querySelector('button[data-testid="stSidebarCollapsedControl"]');
+                if (sbBtn) { sbBtn.click(); }
+            </script>
+            """, height=0, width=0)
+    
+    with c_btn_col3:
         st.caption(f"💾 前回の検索条件が自動保存・復元されています（該当: **{len(df)}社** / {base_population_label}）")
     
     if st.session_state.show_conditions:
@@ -3105,6 +3162,58 @@ with tab1:
         else:
             tab1_df = df.copy()
 
+        # ==========================================
+        # 🎯 【統合案A】表示・並び替えスマートビュー（絞り込み ＆ 最適ソート統合・完全永続保持）
+        # ==========================================
+        smart_view_options = [
+            "🏢 【標準】全社表示（時価総額が小さい順・遠藤式）",
+            "🔥 【トレンド】上昇トレンドのみ（時価総額が小さい順）",
+            "🎯 【押し目買い】押し目好機のみ（高値下落率が大きい順）",
+            "🚀 【超急成長】売上高成長+20%以上のみ（売上高成長率が高い順）",
+            "💰 【少額投資】10万円以下で買える株のみ（1株価格が安い順）",
+            "👑 【オーナー企業】社長・役員が大株主のみ（保有率が高い順）"
+        ]
+
+        if "smart_view_selection" not in st.session_state:
+            st.session_state.smart_view_selection = smart_view_options[0]
+
+        selected_smart_view = st.selectbox(
+            "🎯 表示・並び替えスマートビュー（絞り込み ＆ 最適ソート）:",
+            options=smart_view_options,
+            index=smart_view_options.index(st.session_state.smart_view_selection) if st.session_state.smart_view_selection in smart_view_options else 0,
+            key="tab1_smart_view_select",
+            help="選択した目的に応じて、銘柄の絞り込みと最適な並び替えが一括で適用されます（選択状態は自動保持されます）"
+        )
+        st.session_state.smart_view_selection = selected_smart_view
+
+        # スマートビューに基づく絞り込みと最適ソート
+        if "【トレンド】" in selected_smart_view:
+            if "チャートトレンド" in tab1_df.columns:
+                tab1_df = tab1_df[tab1_df["チャートトレンド"].astype(str).str.contains("上昇トレンド", na=False)].copy()
+            if "時価総額(億円)" in tab1_df.columns:
+                tab1_df = tab1_df.sort_values(by="時価総額(億円)", ascending=True)
+        elif "【押し目買い】" in selected_smart_view:
+            if "エントリー判定" in tab1_df.columns:
+                tab1_df = tab1_df[tab1_df["エントリー判定"].astype(str).str.contains("押し目買い好機", na=False)].copy()
+            if "高値下落率(%)" in tab1_df.columns:
+                tab1_df = tab1_df.sort_values(by="高値下落率(%)", ascending=False)
+        elif "【超急成長】" in selected_smart_view:
+            if "売上高成長率(%)" in tab1_df.columns:
+                tab1_df = tab1_df[tab1_df["売上高成長率(%)"] >= 20.0].copy()
+                tab1_df = tab1_df.sort_values(by="売上高成長率(%)", ascending=False)
+        elif "【少額投資】" in selected_smart_view:
+            if "単元購入額(万円)" in tab1_df.columns:
+                tab1_df = tab1_df[tab1_df["単元購入額(万円)"] <= 10.0].copy()
+            if "株価(円)" in tab1_df.columns:
+                tab1_df = tab1_df.sort_values(by="株価(円)", ascending=True)
+        elif "【オーナー企業】" in selected_smart_view:
+            if "インサイダー保有率(%)" in tab1_df.columns:
+                tab1_df = tab1_df[tab1_df["インサイダー保有率(%)"] >= 20.0].copy()
+                tab1_df = tab1_df.sort_values(by="インサイダー保有率(%)", ascending=False)
+        else:
+            if "時価総額(億円)" in tab1_df.columns:
+                tab1_df = tab1_df.sort_values(by="時価総額(億円)", ascending=True)
+
         # 一覧テーブルの列構成（注目順に再構成：銘柄名の隣に株価・単元株・特徴、データ詳細は後ろへ、不要列を削減）
         display_cols = [
             "仕分け", "エントリー判定", "コード", "銘柄名_リンク", "株価(円)", "単元購入額(万円)", "特徴・サービス",
@@ -3201,7 +3310,25 @@ with tab1:
                         """, height=0, width=0)
                         st.toast(f"✅ コード【{cur_code}】をクリップボードにコピーしました！", icon="📋")
 
-                st.caption("💡 上の「⬅️ 全候補銘柄一覧に戻る」ボタンを押すと、いつでも全一覧に戻ることができます。")
+
+                # 🚀 前後銘柄へのダイレクト移動ナビゲーションバー（並び順のままサクサク次へ移動）
+                total_in_view = len(tab1_df)
+                prev_code = str(tab1_df.iloc[pos - 1]["コード"]) if pos > 0 else None
+                next_code = str(tab1_df.iloc[pos + 1]["コード"]) if pos < total_in_view - 1 else None
+
+                step_col1, step_col2 = st.columns(2)
+                with step_col1:
+                    prev_label = f"⬅️ 前の銘柄 ({pos}/{total_in_view}社)" if prev_code else "⬅️ 前の銘柄 (先頭)"
+                    if st.button(prev_label, key=f"btn_prev_stock_{cur_code}", disabled=(prev_code is None), use_container_width=True):
+                        st.session_state.selected_stock_code = prev_code
+                        st.rerun()
+                with step_col2:
+                    next_label = f"次の銘柄 ➡️ ({pos+2}/{total_in_view}社)" if next_code else "次の銘柄 ➡️ (末尾)"
+                    if st.button(next_label, key=f"btn_next_stock_{cur_code}", disabled=(next_code is None), use_container_width=True):
+                        st.session_state.selected_stock_code = next_code
+                        st.rerun()
+
+                st.caption(f"💡 表示中のスマートビュー（{total_in_view}社）の並び順で前後の銘柄に直接移動できます。")
 
                 single_display_df = display_df.iloc[[pos]].copy()
 

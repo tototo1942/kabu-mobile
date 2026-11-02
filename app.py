@@ -412,18 +412,19 @@ st.markdown("""
     /* ==========================================
        タブメニューの完全高視認性デザイン（Sticky上部固定・濃紺グラデーション帯・純白文字）
        ========================================== */
-    /* タブメニューをWebトップメニューとして完全常駐固定（画面スクロール時も最上端に固定） */
+    /* タブメニューをWebトップメニューとして完全常駐固定（スクロール時も最上端にピタッと吸着常駐） */
     div[data-testid="stTabs"] > div:first-child {
-        position: fixed !important;
+        position: -webkit-sticky !important;
+        position: sticky !important;
         top: 0 !important;
         left: 0 !important;
         right: 0 !important;
         width: 100% !important;
-        z-index: 99999 !important;
-        background: #0F172A !important; /* 濃紺ソリッド背景でコンテンツの透けを完全防止 */
+        z-index: 999999 !important;
+        background: #0F172A !important; /* 濃紺ソリッド背景でスクロール時の透けを100%遮断 */
         padding: 6px 10px !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
-        margin: 0 !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+        margin: 0 0 12px 0 !important;
         box-sizing: border-box !important;
     }
 
@@ -448,13 +449,20 @@ st.markdown("""
         margin: 0 auto !important;
     }
 
-    /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
-    .block-container {
-        padding-top: 58px !important;
+    /* 親コンテナのoverflow制約を解除しStickyの動作を完全保証 */
+    div[data-testid="stTabs"] {
+        overflow: visible !important;
+    }
+    div.block-container {
+        overflow: visible !important;
+        padding-top: 1rem !important;
+    }
+    section.main, [data-testid="stMain"] {
+        overflow: visible !important;
     }
     @media (max-width: 768px) {
-        .block-container {
-            padding-top: 54px !important;
+        div.block-container {
+            padding-top: 0.6rem !important;
         }
     }
     div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
@@ -3031,7 +3039,10 @@ with tab1:
     # ==========================================
     # 検索条件の表示／非表示切り替えバー ＆ 条件バッジ
     # ==========================================
-    c_btn_col1, c_btn_col2, c_btn_col3 = st.columns([2.0, 2.2, 3.2])
+    if "show_inline_filter" not in st.session_state:
+        st.session_state.show_inline_filter = False
+
+    c_btn_col1, c_btn_col2, c_btn_col3 = st.columns([1.8, 2.5, 3.1])
     with c_btn_col1:
         btn_label = "👁️ 条件バッジを隠す" if st.session_state.show_conditions else "👁️ 条件バッジを表示"
         if st.button(btn_label, use_container_width=True, help="画面上の条件バッジの表示／非表示を切り替えます"):
@@ -3040,16 +3051,57 @@ with tab1:
             st.rerun()
     
     with c_btn_col2:
-        if st.button("⚙️ 投資条件フィルターを変更", use_container_width=True, key="btn_open_filter_sidebar", help="サイドバーの条件設定（時価総額スライダー・成長率等）を開きます"):
-            st.components.v1.html("""
-            <script>
-                var sbBtn = window.parent.document.querySelector('button[data-testid="stSidebarCollapsedControl"]');
-                if (sbBtn) { sbBtn.click(); }
-            </script>
-            """, height=0, width=0)
+        filter_btn_label = "⚙️ 条件設定パネルを閉じる" if st.session_state.show_inline_filter else "⚙️ 投資条件フィルターを変更"
+        if st.button(filter_btn_label, use_container_width=True, key="btn_toggle_inline_filter", help="画面内で時価総額・市場・売上成長率などの条件を変更できます"):
+            st.session_state.show_inline_filter = not st.session_state.show_inline_filter
+            st.rerun()
     
     with c_btn_col3:
         st.caption(f"💾 前回の検索条件が自動保存・復元されています（該当: **{len(df)}社** / {base_population_label}）")
+
+    # 画面内での直接フィルター調整パネル（100%確実に動作・スマホ最適）
+    if st.session_state.show_inline_filter:
+        with st.container(border=True):
+            st.markdown("""
+            <div style="font-weight: 800; color: #1E40AF; font-size: 1.05rem; margin-bottom: 6px;">
+                ⚙️ 投資条件フィルターの変更・微調整（画面内パネル）
+            </div>
+            """, unsafe_allow_html=True)
+            st.caption("💡 スライダーやチェックを変更すると即座に一覧が絞り込まれます（変更内容は自動保存されます）。")
+            
+            p_col1, p_col2 = st.columns(2)
+            with p_col1:
+                cur_cap_val = int(st.session_state.get("max_market_cap", 300))
+                new_max_cap = st.slider("🏢 時価総額の上限 (億円)", min_value=50, max_value=500, value=cur_cap_val, step=10, key="inline_slider_max_cap")
+                if new_max_cap != cur_cap_val:
+                    st.session_state.max_market_cap = new_max_cap
+                    save_current_conditions()
+                    st.rerun()
+            with p_col2:
+                cur_growth_val = int(st.session_state.get("min_sales_growth", 0))
+                new_min_rev = st.slider("📈 売上高成長率の下限 (%)", min_value=0, max_value=50, value=cur_growth_val, step=5, key="inline_slider_min_growth")
+                if new_min_rev != cur_growth_val:
+                    st.session_state.min_sales_growth = new_min_rev
+                    save_current_conditions()
+                    st.rerun()
+
+            p_chk1, p_chk2 = st.columns(2)
+            with p_chk1:
+                cur_trend_val = bool(st.session_state.get("chart_uptrend_only", False))
+                new_trend = st.checkbox("🔥 上昇トレンドのみに限定", value=cur_trend_val, key="inline_check_trend")
+                if new_trend != cur_trend_val:
+                    st.session_state.chart_uptrend_only = new_trend
+                    save_current_conditions()
+                    st.rerun()
+            with p_chk2:
+                cur_debt_val = bool(st.session_state.get("filter_debt_free", False))
+                new_debt = st.checkbox("🏦 実質無借金経営のみに限定", value=cur_debt_val, key="inline_check_debt")
+                if new_debt != cur_debt_val:
+                    st.session_state.filter_debt_free = new_debt
+                    save_current_conditions()
+                    st.rerun()
+
+            st.caption("※より詳細な市場選択やPER設定は、画面左上の青い「＞」ボタンを押してサイドバーからも操作可能です。")
     
     if st.session_state.show_conditions:
         tags_html = "".join([f'<span class="filter-tag">{f}</span>' for f in active_filters])
@@ -3166,7 +3218,7 @@ with tab1:
         # 🎯 【統合案A】表示・並び替えスマートビュー（絞り込み ＆ 最適ソート統合・完全永続保持）
         # ==========================================
         smart_view_options = [
-            "🏢 【標準】全社表示（時価総額が小さい順・遠藤式）",
+            "🏢 【標準】全社表示（押し目買い好機優先 ＆ 時価総額順）",
             "🔥 【トレンド】上昇トレンドのみ（時価総額が小さい順）",
             "🎯 【押し目買い】押し目好機のみ（高値下落率が大きい順）",
             "🚀 【超急成長】売上高成長+20%以上のみ（売上高成長率が高い順）",
@@ -3174,17 +3226,51 @@ with tab1:
             "👑 【オーナー企業】社長・役員が大株主のみ（保有率が高い順）"
         ]
 
-        if "smart_view_selection" not in st.session_state:
+        if "smart_view_selection" not in st.session_state or st.session_state.smart_view_selection not in smart_view_options:
             st.session_state.smart_view_selection = smart_view_options[0]
 
+        # 目立つ専用ブルーカード枠でプルダウンを包み込み（見落としを完全防止）
+        st.markdown("""
+        <div style="
+            background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+            border: 2.5px solid #2563EB;
+            border-radius: 12px;
+            padding: 12px 16px 8px 16px;
+            margin: 12px 0 14px 0;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+        ">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: 800; color: #1E40AF; font-size: 1.02rem; margin-bottom: 4px;">
+                <span>🎯</span> <span>【目的別】表示・並び替えスマートビュー（絞り込み ＆ 最適ソート）</span>
+            </div>
+            <div style="font-size: 0.82rem; color: #1E3A8A; margin-bottom: 8px; font-weight: 600;">
+                👇 下のメニューから目的を選ぶと、該当銘柄の抽出と最適な並び替えが一括で適用されます（選択は自動保持）：
+            </div>
+        """, unsafe_allow_html=True)
+
         selected_smart_view = st.selectbox(
-            "🎯 表示・並び替えスマートビュー（絞り込み ＆ 最適ソート）:",
+            "スマートビュー選択:",
             options=smart_view_options,
-            index=smart_view_options.index(st.session_state.smart_view_selection) if st.session_state.smart_view_selection in smart_view_options else 0,
+            index=smart_view_options.index(st.session_state.smart_view_selection),
             key="tab1_smart_view_select",
-            help="選択した目的に応じて、銘柄の絞り込みと最適な並び替えが一括で適用されます（選択状態は自動保持されます）"
+            label_visibility="collapsed"
         )
+        st.markdown("</div>", unsafe_allow_html=True)
         st.session_state.smart_view_selection = selected_smart_view
+
+        # エントリー判定の優先順位スコア関数（押し目好機を先頭、上昇中、高値警戒、調整中の順）
+        def calc_entry_score(val):
+            s = str(val)
+            if "押し目買い好機" in s:
+                return 1
+            if "上昇中" in s:
+                return 2
+            if "高値警戒" in s:
+                return 3
+            if "リバウンド途上" in s:
+                return 4
+            if "下降" in s:
+                return 5
+            return 6
 
         # スマートビューに基づく絞り込みと最適ソート
         if "【トレンド】" in selected_smart_view:
@@ -3210,8 +3296,12 @@ with tab1:
             if "インサイダー保有率(%)" in tab1_df.columns:
                 tab1_df = tab1_df[tab1_df["インサイダー保有率(%)"] >= 20.0].copy()
                 tab1_df = tab1_df.sort_values(by="インサイダー保有率(%)", ascending=False)
-        else:
-            if "時価総額(億円)" in tab1_df.columns:
+        else: # 🏢 【標準】全社表示（押し目買い好機優先 ＆ 時価総額順）
+            if "エントリー判定" in tab1_df.columns and "時価総額(億円)" in tab1_df.columns:
+                tab1_df["_entry_rank"] = tab1_df["エントリー判定"].map(calc_entry_score)
+                tab1_df = tab1_df.sort_values(by=["_entry_rank", "時価総額(億円)"], ascending=[True, True])
+                tab1_df.drop(columns=["_entry_rank"], inplace=True)
+            elif "時価総額(億円)" in tab1_df.columns:
                 tab1_df = tab1_df.sort_values(by="時価総額(億円)", ascending=True)
 
         # 一覧テーブルの列構成（注目順に再構成：銘柄名の隣に株価・単元株・特徴、データ詳細は後ろへ、不要列を削減）

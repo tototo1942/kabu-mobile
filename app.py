@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+﻿# -*- coding: utf-8 -*-
 """
 遠藤洋式 小型株集中投資 Webダッシュボード (app.py)
 著書『10万円から始める！ 小型株集中投資で1億円』の全メソッドを完全実装した高視認性Webアプリ。
@@ -463,14 +463,18 @@ st.markdown("""
         background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
+        overflow-x: scroll !important;
+        white-space: nowrap !important;
         overflow-y: hidden !important;
         gap: 8px !important;
         padding: 4px 8px !important;
         border: 1.5px solid #2563EB !important;
         border-radius: 10px !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-        scrollbar-width: none !important;
+        scrollbar-width: auto !important;
+        scrollbar-color: #38BDF8 #0B1329 !important;
+        touch-action: pan-x !important;
+        overscroll-behavior-x: contain !important;
         -webkit-overflow-scrolling: touch !important;
         max-width: 1200px !important;
         margin: 0 auto !important;
@@ -479,7 +483,7 @@ st.markdown("""
     /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
     div[data-testid="stTabs"] > div:last-child,
     div[data-testid="stTabContent"] {
-        margin-top: 56px !important;
+        margin-top: 66px !important;
     }
     div.block-container {
         padding-top: 10px !important;
@@ -487,16 +491,30 @@ st.markdown("""
     @media (max-width: 768px) {
         div[data-testid="stTabs"] > div:last-child,
         div[data-testid="stTabContent"] {
-            margin-top: 50px !important;
+            margin-top: 60px !important;
         }
         div.block-container {
             padding-top: 6px !important;
         }
     }
+    /* 指で掴める高視認性太型スクロールバー（高さ10px） */
     div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
     div[data-baseweb="tab-list"]::-webkit-scrollbar {
-        display: none !important;
-        height: 0 !important;
+        height: 10px !important;
+        display: block !important;
+    }
+    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
+    div[data-baseweb="tab-list"]::-webkit-scrollbar-track {
+        background: #0B1329 !important;
+        border-radius: 8px !important;
+        margin: 0 8px !important;
+    }
+    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
+    div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: linear-gradient(90deg, #38BDF8 0%, #2563EB 100%) !important;
+        border-radius: 8px !important;
+        border: 2px solid #FFFFFF !important;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
     }
 
     /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */

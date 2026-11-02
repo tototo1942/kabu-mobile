@@ -271,3 +271,9 @@ git push -u origin main
   - 非選択タブボタン自体に `background-color: #1E293B`（濃紺ソリッド背景）と青枠線を直接付与し、背景が白抜けして文字が消える問題を根本根絶。
 * **📑 決算・IR業績 ＆ 公式IRサイトボタンの白抜き文字完全保護**:
   - `-webkit-text-fill-color: #FFFFFF !important;` を付与し、ブラウザの `:visited` 自動変色（青紫化）を100%遮断して鮮明な白抜き文字を保証。
+
+* **⚙️ サイドバー展開ボタンの表示修正（初期Close維持 ＆ ヘッダー破壊CSS解除）**:
+  - `header[data-testid="stHeader"]` に設定されていた `height: 0` と `pointer-events: none` を完全撤去し、サイドバー開閉ボタン（`stSidebarCollapsedControl`）が押し潰される不具合を解消。
+  - セレクタを `div` / `button` / `header [data-testid*="CollapsedControl"]` 等に全網羅し、`z-index: 10000000` で左上（`top: 6px, left: 6px`）に鮮明な青色ボタン（44px×44px）として常時可視化。
+  - タブメニューに `padding-left: 56px` を付与し、サイドバー開閉ボタンと第1タブの重なりを完全解消。
+  - ユーザー指定に基づき `initial_sidebar_state="collapsed"`（初期Close）を維持。

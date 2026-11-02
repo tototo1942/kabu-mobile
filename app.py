@@ -224,23 +224,31 @@ st.markdown("""
        Streamlit Cloud 不要UI要素の完全根こそぎ消去
        ========================================== */
     #MainMenu {visibility: hidden !important; display: none !important;}
+    /* ヘッダーの透過・サイドバー開閉ボタンの保護（height: 0 や pointer-events: none を撤去） */
     header[data-testid="stHeader"] {
         background: transparent !important;
-        height: 0 !important;
-        min-height: 0 !important;
         border: none !important;
         box-shadow: none !important;
-        pointer-events: none !important;
         z-index: 100000 !important;
+        pointer-events: auto !important;
     }
     /* ヘッダー内の不要なツールバーのみを消去 */
     header[data-testid="stHeader"] [data-testid="stToolbar"] {
         display: none !important;
         visibility: hidden !important;
     }
-    /* 左上のサイドバー開閉アイコン（>）をスマホでも押しやすく目立つデザインで確実に復元 */
+    /* 左上のサイドバー開閉アイコン（<, >）を全セレクタ網羅で完全可視化・押しやすい高視認デザイン */
+    [data-testid="stSidebarCollapsedControl"],
+    div[data-testid="stSidebarCollapsedControl"],
     button[data-testid="stSidebarCollapsedControl"],
-    button[data-testid="stSidebarCollapseButton"] {
+    [data-testid="collapsedControl"],
+    div[data-testid="collapsedControl"],
+    button[data-testid="collapsedControl"],
+    [data-testid="stSidebarCollapseButton"],
+    div[data-testid="stSidebarCollapseButton"],
+    button[data-testid="stSidebarCollapseButton"],
+    header [data-testid*="CollapsedControl"],
+    header [data-testid*="CollapseButton"] {
         display: flex !important;
         visibility: visible !important;
         opacity: 1 !important;
@@ -254,15 +262,24 @@ st.markdown("""
         border-radius: 8px !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
         z-index: 10000000 !important;
-        width: 42px !important;
-        height: 42px !important;
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
         align-items: center !important;
         justify-content: center !important;
+        cursor: pointer !important;
     }
-    button[data-testid="stSidebarCollapsedControl"] svg,
-    button[data-testid="stSidebarCollapseButton"] svg {
+    [data-testid*="CollapsedControl"] svg,
+    [data-testid*="CollapseButton"] svg,
+    [data-testid*="collapsedControl"] svg {
         fill: #FFFFFF !important;
         color: #FFFFFF !important;
+        width: 22px !important;
+        height: 22px !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        display: block !important;
     }
     [data-testid="stToolbar"] {display: none !important; visibility: hidden !important;}
     [data-testid="stDecoration"] {display: none !important; visibility: hidden !important;}
@@ -432,7 +449,7 @@ st.markdown("""
         width: 100vw !important;
         z-index: 999999 !important;
         background: #0F172A !important; /* 濃紺ソリッド背景でスクロール時の透けを100%遮断 */
-        padding: 6px 10px !important;
+        padding: 6px 10px 6px 56px !important;
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
         margin: 0 !important;
         box-sizing: border-box !important;

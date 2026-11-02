@@ -438,9 +438,8 @@ st.markdown("""
     }
 
     /* ==========================================
-       タブメニューの完全高視認性デザイン（Sticky上部固定・濃紺グラデーション帯・純白文字）
+       最上部タブメニュー（厳選2タブ：一覧 & 5分ウォッチ）
        ========================================== */
-    /* タブメニューをWebトップメニューとして完全常駐固定（画面スクロール時も最上端0pxに完全固定） */
     div[data-testid="stTabs"] > div:first-child {
         position: fixed !important;
         top: 0px !important;
@@ -448,83 +447,123 @@ st.markdown("""
         right: 0px !important;
         width: 100vw !important;
         z-index: 999999 !important;
-        background: #0F172A !important; /* 濃紺ソリッド背景でスクロール時の透けを100%遮断 */
-        padding: 6px 10px 6px 56px !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
-        margin: 0 !important;
+        background: #0F172A !important;
+        padding: 6px 12px 6px 54px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
         box-sizing: border-box !important;
+        margin: 0 !important;
     }
 
-    /* 濃紺グラデーションのタブバー帯本体（PC: 1行表示） */
+    /* 2タブの親リスト */
     div[data-testid="stTabs"] > div:first-child > div,
     div[data-testid="stTabs"] [role="tablist"],
     div[data-testid="stTabs"] [data-baseweb="tab-list"],
     div[data-baseweb="tab-list"] {
-        background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
+        background: #1E293B !important;
         display: flex !important;
+        flex-direction: row !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        overflow-y: hidden !important;
-        gap: 8px !important;
-        padding: 4px 8px !important;
-        border: 1.5px solid #2563EB !important;
-        border-radius: 10px !important;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-        max-width: 1200px !important;
+        width: 100% !important;
+        max-width: 840px !important;
         margin: 0 auto !important;
+        border: 1.5px solid #3B82F6 !important;
+        border-radius: 10px !important;
+        padding: 4px !important;
+        gap: 6px !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
     }
 
-    /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
+    /* 各タブボタン（均等50%幅・中央揃え） */
+    div[data-testid="stTabs"] button[data-baseweb="tab"],
+    div[data-testid="stTabs"] [role="tab"],
+    div[data-testid="stTabs"] > div:first-child button {
+        flex: 1 1 50% !important;
+        width: 50% !important;
+        min-width: 0 !important;
+        max-width: 50% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        align-items: center !important;
+        padding: 7px 10px !important;
+        border-radius: 8px !important;
+        background: transparent !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        cursor: pointer !important;
+        margin: 0 !important;
+        transition: all 0.2s ease !important;
+        white-space: nowrap !important;
+    }
+
+    /* タブの文字装飾 */
+    html body div[data-testid="stTabs"] button p,
+    html body div[data-testid="stTabs"] button span,
+    html body div[data-testid="stTabs"] button div,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"] p,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"] span,
+    html body div[data-testid="stTabs"] [role="tab"] p,
+    html body div[data-testid="stTabs"] [role="tab"] span,
+    html body div[data-testid="stTabs"] > div:first-child * {
+        color: #94A3B8 !important;
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        text-align: center !important;
+        margin: 0 !important;
+    }
+
+    /* 選択中（アクティブ）タブ */
+    div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
+    div[data-testid="stTabs"] [role="tab"][aria-selected="true"],
+    div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] {
+        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+        background-color: #2563EB !important;
+        box-shadow: 0 2px 10px rgba(37, 99, 235, 0.5) !important;
+    }
+    html body div[data-testid="stTabs"] button[aria-selected="true"] p,
+    html body div[data-testid="stTabs"] button[aria-selected="true"] span,
+    html body div[data-testid="stTabs"] button[aria-selected="true"] div,
+    html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
+    html body div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        font-weight: 800 !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* タブ直下のコンテンツ上部余白 */
     div[data-testid="stTabs"] > div:last-child,
     div[data-testid="stTabContent"] {
-        margin-top: 56px !important;
+        margin-top: 54px !important;
     }
     div.block-container {
-        padding-top: 10px !important;
+        padding-top: 8px !important;
     }
 
-    /* ==========================================
-       スマホ画面最適化：2段自動折り返しで全メニューを100%常時可視化！
-       ========================================== */
+    /* スマホ画面最適化 */
     @media (max-width: 768px) {
-        /* スマホ上部固定コンテナのパディング調整 */
         div[data-testid="stTabs"] > div:first-child {
-            padding: 6px 8px 6px 50px !important;
+            padding: 5px 8px 5px 44px !important;
         }
-        /* タブリスト：2段折り返し（見切れゼロ・スワイプ不要） */
-        div[data-testid="stTabs"] > div:first-child > div,
-        div[data-testid="stTabs"] [role="tablist"],
-        div[data-testid="stTabs"] [data-baseweb="tab-list"],
-        div[data-baseweb="tab-list"] {
-            display: flex !important;
-            flex-wrap: wrap !important;
-            overflow: visible !important;
-            gap: 4px 5px !important;
-            padding: 4px 6px !important;
-            justify-content: flex-start !important;
-        }
-        /* 各タブボタン：スマホで全項目が綺麗に2段（または3段）で収まる最適サイズ */
         div[data-testid="stTabs"] button[data-baseweb="tab"],
         div[data-testid="stTabs"] [role="tab"],
         div[data-testid="stTabs"] > div:first-child button {
-            flex: 0 0 auto !important;
-            font-size: 0.78rem !important;
-            padding: 5px 8px !important;
-            white-space: nowrap !important;
-            margin: 1px 0 !important;
-            border-radius: 6px !important;
+            padding: 6px 4px !important;
         }
-        /* 2段タブメニューに伴うコンテンツ押し下げ余白（裏に被らない高さ確保） */
+        html body div[data-testid="stTabs"] button p,
+        html body div[data-testid="stTabs"] button span,
+        html body div[data-testid="stTabs"] [role="tab"] p,
+        html body div[data-testid="stTabs"] > div:first-child * {
+            font-size: 0.82rem !important;
+        }
         div[data-testid="stTabs"] > div:last-child,
         div[data-testid="stTabContent"] {
-            margin-top: 88px !important;
-        }
-        div.block-container {
-            padding-top: 4px !important;
+            margin-top: 48px !important;
         }
     }
 
-    /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */
+    /* 余分なスクロール矢印ボタンを非表示 */
     div[data-testid="stTabs"] button[aria-label*="Scroll"],
     div[data-testid="stTabs"] button[aria-label*="scroll"],
     div[data-testid="stTabs"] button[aria-label*="Previous"],
@@ -540,60 +579,7 @@ st.markdown("""
         pointer-events: none !important;
     }
 
-    /* タブボタン：非選択時も濃紺ソリッド背景で白抜けを完全根絶！ */
-    div[data-testid="stTabs"] button[data-baseweb="tab"],
-    div[data-testid="stTabs"] [role="tab"],
-    div[data-testid="stTabs"] > div:first-child button {
-        flex: 0 0 auto !important;
-        white-space: nowrap !important;
-        padding: 6px 14px !important;
-        border-radius: 8px !important;
-        background-color: #1E293B !important;
-        background: #1E293B !important;
-        border: 1.5px solid #3B82F6 !important;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
-        cursor: pointer !important;
-        margin: 2px 0 !important;
-    }
-
-    /* 【最高詳細度セレクタ】タブ内のすべての文字を例外なく純白（#FFFFFF）に強制固定！ */
-    html body div[data-testid="stTabs"] button p,
-    html body div[data-testid="stTabs"] button span,
-    html body div[data-testid="stTabs"] button div,
-    html body div[data-testid="stTabs"] button[data-baseweb="tab"] p,
-    html body div[data-testid="stTabs"] button[data-baseweb="tab"] span,
-    html body div[data-testid="stTabs"] button[data-baseweb="tab"] div,
-    html body div[data-testid="stTabs"] [role="tab"] p,
-    html body div[data-testid="stTabs"] [role="tab"] span,
-    html body div[data-testid="stTabs"] > div:first-child * {
-        color: #FFFFFF !important;
-        font-weight: 700 !important;
-        font-size: 0.90rem !important;
-        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
-    }
-
-    /* 選択中（アクティブ）タブ：鮮やかなロイヤルブルーグラデーション ＋ 純白文字 */
-    div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"],
-    div[data-testid="stTabs"] [role="tab"][aria-selected="true"],
-    div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] {
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-        background-color: #2563EB !important;
-        border: 2px solid #93C5FD !important;
-        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.5) !important;
-    }
-    html body div[data-testid="stTabs"] button[aria-selected="true"] p,
-    html body div[data-testid="stTabs"] button[aria-selected="true"] span,
-    html body div[data-testid="stTabs"] button[aria-selected="true"] div,
-    html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p,
-    html body div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] span,
-    html body div[data-testid="stTabs"] > div:first-child button[aria-selected="true"] * {
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-        font-weight: 800 !important;
-        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
-    }
-
-    /* デフォルトの青い下線（ハイライト）を完全消去 */
+    /* デフォルトの青い下線を非表示 */
     div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
     div[data-testid="stTabs"] [data-baseweb="tab-border"] {
         display: none !important;
@@ -3242,18 +3228,714 @@ def render_stock_deep_dive(idx, tab1_df):
             st.link_button(f"🎵 TikTokで '{stock_name}' を検索", f"https://www.tiktok.com/search?q={stock_name}", use_container_width=True)
 
 
-# ==========================================
-# アプリ最上部ナビゲーションタブ（開いた瞬間最上部に常駐）
-# ==========================================
-tab1, tab2, tab_guide, tab3, tab4, tab5 = st.tabs([
-    "📋 厳選小型株一覧", 
-    "💼 1日5分保有株ウォッチ", 
-    "🔰 使い方 ＆ データ安心マップ",
-    "📚 投資メソッド完全ガイド",
-    "📱 iSPEED設定ヘルプ",
-    "📖 用語と数値の見方ガイド"
-])
 
+# ==========================================
+# モーダルダイアログ対応（@st.dialog / @st.experimental_dialog 互換）
+# ==========================================
+if hasattr(st, "dialog"):
+    app_dialog = st.dialog
+elif hasattr(st, "experimental_dialog"):
+    app_dialog = st.experimental_dialog
+else:
+    def app_dialog(title, width="large"):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                with st.expander(title, expanded=True):
+                    func(*args, **kwargs)
+            return wrapper
+        return decorator
+
+@app_dialog("🔰 使い方 ＆ データ安心マップ", width="large")
+def show_guide_dialog():
+    with st.container(border=True):
+        st.markdown("""
+        ### 🔰 TOTOTO-KABU 基本操作ガイド（簡単4ステップ）
+        当アプリは、プロ投資家・遠藤洋氏の『小型株集中投資で1億円』の選定基準に基づき、急成長する小型株を直感的に発掘・監視できるダッシュボードです。
+        """)
+
+        g_c1, g_c2 = st.columns(2)
+        with g_c1:
+            st.markdown("""
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem; margin-bottom: 6px;">
+                    ① プリセットで一発スクリーニング
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    サイドバーの「👑 ①王道・集中投資型」や「🔥 全条件クリア」を押すだけで、書籍の理想条件（売上+20%以上、社長大株主、時価総額200億円以下など）を満たすお宝候補銘柄が即座に絞り込まれます。
+                </div>
+            </div>
+            <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #166534; font-size: 0.95rem; margin-bottom: 6px;">
+                    ② 深掘りカードでAIリサーチ ＆ CM確認
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    一覧から気になる銘柄を選択すると、「深掘り分析カード」が開きます。「📋 プロンプトコピー」を押してChatGPTやGrokに貼るだけで、SNS感情分析や競合優位性をプロ級に調査できます。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        with g_c2:
+            st.markdown("""
+            <div style="background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #92400E; font-size: 0.95rem; margin-bottom: 6px;">
+                    ③ メモ入力 ＆ 保有株ウォッチ登録
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    「⭐ 検討・監視リストに入れる」を押すと、タブ2の『💼 保有株ウォッチ』に追加されます。銘柄ごとの独自メモも入力可能で、<strong>あなたのお使いの端末だけに完全非公開で安全保存</strong>されます。
+                </div>
+            </div>
+            <div style="background: #FAF5FF; border: 1.5px solid #E9D5FF; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 800; color: #6B21A8; font-size: 0.95rem; margin-bottom: 6px;">
+                    ④ 1日5分！保有株の株価・決算点検
+                </div>
+                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
+                    日々のルーティンは『💼 1日5分保有株ウォッチ』を開くだけ。登録銘柄の株価動向や決算発表予定日を一覧でサッとチェックできます。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # --- 🛡️ データ分類の完全マップ ---
+        st.markdown("""
+        ### 🛡️ データ安心マップ（端末個別保存 vs Web共有データ）
+        当アプリでは、プライバシーとセキュリティを最優先に設計しています。<strong>あなたが入力したメモや保有株リストはサーバー上に一切保存されず、お使いの端末（ブラウザ）の中だけに独立して保持されます。</strong><br>
+        第三者が当アプリにアクセスしても、あなたのデータが閲覧されたり、改ざんされたりすることは構造上100%ありません。
+        """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">データ項目</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">保存場所</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">第三者の閲覧</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">改ざんリスク</th>
+              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">バックアップ・移行</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background: #F0FDF4;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #166534;">📝 銘柄個別メモ (自作コメント)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #FFFFFF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">💼 保有株・ウォッチリスト</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #F8FAFC;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🎯 検討仕分け (候補/見送り)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
+            </tr>
+            <tr style="background: #EFF6FF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E40AF;">🌐 厳選小型株リスト (全126社等)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">☁️ クラウドサーバー</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 全員共通 (公開)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 閲覧者による変更不可</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">スクリーナー自動最新化</td>
+            </tr>
+            <tr style="background: #FFFFFF;">
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📈 株価チャート・財務指標</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">📊 市場API (Yahoo!等)</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 公開市場データ</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 改ざん不可</td>
+              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">リアルタイム自動取得</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("---")
+
+        # --- 💾 全データ一括バックアップ ＆ 一括復元 ---
+        st.markdown("""
+        ### 💾 全メモ・保有株データの一括バックアップ ＆ 復元
+        機種変更をされる際や、別のスマートフォン・PCとお手元のメモ・保有株を同期したい場合は、こちらをご利用ください。
+        """)
+
+        bk_c1, bk_c2 = st.columns(2)
+        with bk_c1:
+            st.markdown("#### 📥 データを保存する (バックアップ)")
+            st.caption("全銘柄のメモ、保有株ウォッチリスト、仕分け判定を1つのファイル（JSON）にまとめてダウンロードします。")
+            
+            import json
+            backup_dict = {
+                "version": "1.0",
+                "app": "TOTOTO-KABU",
+                "exported_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "stock_notes": st.session_state.get("stock_notes", {}),
+                "my_watchlist": st.session_state.get("my_watchlist", []),
+                "stock_status": st.session_state.get("stock_status", {})
+            }
+            json_str = json.dumps(backup_dict, ensure_ascii=False, indent=2)
+            export_filename = f"tototo_kabu_backup_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json"
+            
+            st.download_button(
+                label="📥 全データを一括ダウンロード (JSON)",
+                data=json_str,
+                file_name=export_filename,
+                mime="application/json",
+                use_container_width=True,
+                key="btn_backup_download"
+            )
+            note_cnt = len(st.session_state.get("stock_notes", {}))
+            watch_cnt_total = len(st.session_state.get("my_watchlist", []))
+            st.caption(f"📊 現在の端末保存データ: メモ **{note_cnt} 件** / 保有株 **{watch_cnt_total} 件**")
+
+        with bk_c2:
+            st.markdown("#### 📤 データを読み込む (一括復元)")
+            st.caption("以前ダウンロードしたバックアップファイル（JSON）を選択すると、全銘柄のメモや保有株が一瞬で完全復元されます。")
+            
+            uploaded_bk = st.file_uploader("バックアップファイル (.json) を選択", type=["json"], key="uploader_backup_restore")
+            if uploaded_bk is not None:
+                try:
+                    restore_data = json.load(uploaded_bk)
+                    if isinstance(restore_data, dict):
+                        restored_notes = restore_data.get("stock_notes", {})
+                        restored_watch = restore_data.get("my_watchlist", [])
+                        restored_status = restore_data.get("stock_status", {})
+                        
+                        st.session_state.stock_notes = restored_notes
+                        st.session_state.my_watchlist = restored_watch
+                        st.session_state.stock_status = restored_status
+                        
+                        st.success(f"🎉 復元成功！ (メモ: {len(restored_notes)}件, 保有株: {len(restored_watch)}件 を読み込みました)")
+                        if st.button("🔄 画面を最新状態で再読み込み", use_container_width=True):
+                            st.rerun()
+                    else:
+                        st.error("⚠️ 正しいバックアップファイル形式ではありません。")
+                except Exception as e:
+                    st.error(f"⚠️ 読み込み中にエラーが発生しました: {e}")
+
+
+# ==========================================
+# タブ3：遠藤洋氏の投資メソッド完全ガイド
+# ==========================================
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✕ ウィンドウを閉じる", key="close_guide_modal", use_container_width=True):
+        st.rerun()
+
+@app_dialog("📚 投資メソッド完全ガイド", width="large")
+def show_method_dialog():
+    with st.container(border=True):
+        st.markdown("""
+### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
+当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
+""", unsafe_allow_html=True)
+
+        st.markdown("""<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
+<table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+  <thead>
+    <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 120px; color: #FFFFFF !important;">パターン名</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 130px; color: #FFFFFF !important;">準拠度・厳格度</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 90px; color: #FFFFFF !important;">該当社数目安</th>
+      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 220px; color: #FFFFFF !important;">基準の厳しさと狙い</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background: #FFFBEB;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #B45309;">🔥 全条件クリア・超お宝型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★★<br><span style="font-size:0.75rem; color:#475569;">(究極・奇跡のフルコンプ)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">1社〜数社<br><span style="font-size:0.75rem; color:#64748B;">(時期により0社)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>全11条件を100点満点で全クリした奇跡の銘柄</strong>。<br><span style="font-size:0.82rem; color:#475569;">（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも<em>「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」</em>とされる極限の絞り込みです。</span></td>
+    </tr>
+    <tr style="background: #FFFFFF;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">👑 ① 王道・集中投資型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★<br><span style="font-size:0.75rem; color:#475569;">(最も厳格・理想の本命)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜20社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>書籍P.1の理想5大条件を厳密適用</strong>。<br><span style="font-size:0.82rem; color:#475569;">時価総額200億以下、売上+20%以上、社長30%以上、無借金、上昇トレンド。<br>最も再現性が高く、投資メソッドの真髄となる本命パターンです。</span></td>
+    </tr>
+    <tr style="background: #F8FAFC;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🛡️ ② 堅実安全・押し目型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #2563EB;">★★★★☆<br><span style="font-size:0.75rem; color:#475569;">(手堅い安全重視)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約15〜25社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">基本条件に「割安PER × 高値から下がった押し目」を掛け合わせ、高値掴みを防いで安く仕込む守りの設定です。</td>
+    </tr>
+    <tr style="background: #FFFFFF;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🚀 ③ テンバガー狙い型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #EA580C;">★★★★☆+<br><span style="font-size:0.75rem; color:#475569;">(超高成長特化)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜15社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">売上成長率を「+30%以上」に引き上げ、10倍株（テンバガー）の爆発力を持つ企業のみを狙い撃つ攻撃的設定です。</td>
+    </tr>
+    <tr style="background: #F8FAFC;">
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📋 デフォルト（初期状態）</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #64748B;">★★★☆☆<br><span style="font-size:0.75rem; color:#475569;">(基本合格ライン)</span></td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">全126社</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">時価総額300億円以下、売上+20%以上、社長比率20%以上。<br>最低合格ラインをクリアした全銘柄を広く見渡すための母集団です。</td>
+    </tr>
+  </tbody>
+</table>
+</div>""", unsafe_allow_html=True)
+
+        st.markdown("""
+---
+
+### 📖 『小型株集中投資で1億円』の選定メソッド完全まとめ
+
+#### 1. 1年以内に3倍以上になる成長株 8つのチェックポイント (書籍P.1)
+1. **上場して5年以内の会社** (初々しく成長余力が大きい)
+2. **時価総額が小さい (300億円以下)** (大企業と違い、身軽に数倍・十倍化が可能)
+3. **創業社長が現役** (情熱と意思決定のスピードが圧倒的)
+4. **社長や経営幹部が大株主** (経営陣の利益と株主の利益が完全一致)
+5. **高学歴の新卒社員がいる** (成長企業には優秀な若者が集まる)
+6. **社員の平均年齢が若い** (20代〜30代前半。活気と柔軟性がある)
+7. **みんなが欲しいと思う商品を提供している** (中学生でもわかるシンプルな需要)
+8. **株価チャートが上昇トレンド** (25日・75日移動平均線上向き。下降トレンドは絶対NG)
+
+---
+
+#### 2. 💡 イノベーター理論による売買タイミング 普及フェーズ判定 (書籍P.13〜19)
+* **【買い時】アーリーアダプター期 (初期採用者)**:
+  アンテナの高い感度の良い人が使い始めた段階。世間の認知はまだ「怪しい」「一部の流行」。企業がCM・広告に力を入れ始め、キャズム（普及率16%）を超える直前。**株価急騰の初動！**
+* **【売り時】レイトマジョリティ期 (後期追随者)**:
+  普段新しいものを使わない一般層や保守層まで知れ渡った段階。一般人が熱狂し、ワイドショーやSNSで大騒ぎされた時。株価はすでに織り込み済みで天井圏のリスク大。
+""")
+
+        st.info("""
+**📖 遠藤洋氏の格言:**
+『まわりの人が **「まだ怪しい」** と言っている時は **買い**。
+**「みんな使っている」** と言い始めたら **売り**。』
+""")
+
+        st.markdown("""
+---
+
+#### 3. 株式投資でやってはいけない8つのこと (書籍P.20)
+* ❌ 分散投資はやってはいけない (少額資金なら1〜3銘柄に集中)
+* ❌ 下がった株を持ち続けてはいけない (-10〜20%で即損切り)
+* ❌ 有名な大企業の株は買ってはいけない
+* ❌ 株価を見て株を買ってはいけない
+* ❌ Twitterで盛り上がっている株を買ってはいけない (イナゴ買い厳禁)
+* ❌ 理解できない株を買ってはいけない
+* ❌ 銀行や証券会社がすすめる投資信託を買ってはいけない
+* ❌ 他人に預ける投資はやってはいけない
+""")
+
+
+# ==========================================
+# タブ4：iSPEED設定ヘルプガイド
+# ==========================================
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✕ ウィンドウを閉じる", key="close_method_modal", use_container_width=True):
+        st.rerun()
+
+@app_dialog("📱 楽天iSPEED設定ヘルプ", width="large")
+def show_ispeed_dialog():
+    with st.container(border=True):
+        st.markdown("""
+        ### 📱 楽天証券 iSPEED「スーパースクリーナー」完全設定ガイド
+        スマホアプリ「iSPEED」で、当ダッシュボードと同じ条件（遠藤洋氏メソッド ＆ 1株少額投資対応）を再現し、毎日ワンタップで確認するための完全マニュアルです。
+
+        ---
+
+        #### 【ステップ1】スーパースクリーナーを開く
+        1. スマホで **iSPEED** アプリを開く
+        2. 画面下のメニューから **「検索」**（虫眼鏡アイコン）をタップ
+        3. 上部に並んでいるタブの中から **「スーパースクリーナー」** を選択
+        4. 画面右上の **「検索条件作成」**（または条件の追加）をタップ
+        5. 最上部のタブが **「国内株式」** になっていることを確認（※米国株ではなく国内株式のままでOK）
+
+        ---
+
+        #### 【ステップ2】基本画面の設定（上半分）
+        * **市場**: **「東S（スタンダード）」「東G（グロース）」** にチェックを入れる（※プライムは外す）
+        * **種別**: **「かぶミニ寄付」** にチェックを入れる
+          * ⚠️ **超重要**: 必ず「寄付」にしてください。「リアル」だけにすると小型成長株のほとんどが除外されてしまいます。
+        * **規模**: **「小型株」** にチェックを入れる
+
+        ---
+
+        #### 【ステップ3】詳細条件の追加（「⊕ 検索条件追加」から設定）
+        画面下部の **「⊕ 検索条件追加」** ボタンをタップし、以下の項目を順に追加します。
+
+        1. **時価総額（会社の身軽さ）**
+           * 「株価・財務」カテゴリ → **「時価総額」** を選択
+           * 設定値: **上限「300 億円」**（下限は空欄）
+        2. **売上高変化率（成長の勢い）**
+           * 「財務」カテゴリ → **「売上高変化率」** を選択
+           * 設定値: **下限「+20 %」**（今期予想 または 前期実績）
+        3. **予想PER（割安・適正水準）** ★超重要注意点！
+           * **必ず「財務」タブ** から **『PER（株価収益率）（倍）』** を選択
+           * ⚠️ **落とし穴注意**: 「コンセンサス情報」側のPERを選んではいけません。小型株はアナリスト予想がないため全滅してしまいます。必ず「財務」側を選んでください。
+           * 設定値: **上限「40 倍」**
+        4. **チャートトレンド（上昇トレンド判定）**
+           * 「テクニカル」カテゴリ → **「株価と移動平均」** を選択
+           * 設定値: **「株価が25日移動平均線上」** にチェック
+
+        ---
+
+        #### 【ステップ4】検索結果が「1件（または極端に少ない）」時の調整ワザ！
+        全条件を同時に満たす株は市場全体でも1〜2社しか存在しない「奇跡の超厳選株」です。  
+        **普段15〜25社の中から比較して選ぶためのおすすめ調整法**:
+        * 👉 **「予想PER 40倍以下」を一旦オフにする**  
+          （急成長株は人気でPERが高くなりやすいため、これを外すと一気に優良な急成長株が **15〜20件** に増えて選びやすくなります）
+
+        ---
+
+        #### 【ステップ5】検索条件を保存する（次からワンタップ！）
+        1. 画面右下の青緑色ボタン **「検索（〇〇件）」** をタップして結果を表示
+        2. 結果一覧画面の **右上にある「条件保存」** をタップ
+        3. 条件名に **「遠藤式・小型成長株」** と入力して保存！
+
+        > 💡 **次回からの確認方法**:  
+        > iSPEEDの「検索」→「スーパースクリーナー」→ **「保存条件」タブ** を開くだけで、いつでも最新の銘柄一覧が自動更新されてパッと表示されます。
+        """)
+
+
+# ==========================================
+# タブ5：投資・専門用語と数値の見方ガイド
+# ==========================================
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✕ ウィンドウを閉じる", key="close_ispeed_modal", use_container_width=True):
+        st.rerun()
+
+@app_dialog("📖 用語と数値の見方ガイド", width="large")
+def show_terms_dialog():
+    st.markdown("## 📖 投資・専門用語と数値の見方ガイド")
+    st.caption("💡 気になる用語をタップすると、意味や数値（プラス／マイナス）の判断目安が詳しく展開します。")
+
+    # 1. 一覧表の重要項目と数値の読み方
+    with st.container(border=True):
+        st.markdown("### 📊 一覧表の重要項目 ＆ 数値（＋／ー）の読み取り方")
+        
+        # 売上高成長率
+        with st.expander("📈 売上高成長率（%）"):
+            st.markdown("""
+            > 💡 **要約**: 本業の勢いと急成長の証拠（全範囲の完全判定早見表）
+
+            * **用語の意味**: 会社が本業のサービスや商品で稼いだ「売上」が、去年に比べてどれくらい増えたかを表す最重要指標です。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * 🟢 **`+20.0% 以上`（青信号・理想の大化け水準）**: 本業が猛烈に急拡大。3年で約1.7倍、4年で2倍に成長する本物の大化け成長株です。
+              * ⚪ **`+10.0% 〜 +19.9%`（中立・及第点ゾーン）**: 黒字で順調に成長中。合格圏ですが、1年で株価3倍を狙うにはやや勢い不足の標準ペースです。
+              * 🟡 **`0.0% 〜 +9.9%`（黄信号・鈍化警戒）**: 成長がストップしかけており、成熟企業・減速の兆候。小型株集中投資としては勢い不足です。
+              * 🔴 **`マイナス（-）`（赤信号・手出し無用）**: 前年の売上を割り込み本業が縮小。大化け投資の対象外です。
+            """)
+
+        # 高値比下落率
+        with st.expander("📉 高値比下落率（%）"):
+            st.markdown("""
+            > 💡 **要約**: 過去最高値からの値引き（バーゲン）度合（全範囲の完全判定早見表）
+
+            * **用語の意味**: 過去1年間の最も高かった株価（52週高値）から、現在どれくらい値下がりしているかを表します。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * 🟡 **`0.0% 〜 -3.0%`（高値警戒・飛びつき注意）**: 直近の天井（レジスタンス）直前。利益確定売りに押されやすいため、飛びつきを避けて押し目を待つのが賢明です。
+              * ⚪ **`-3.1% 〜 -6.9%`（浅い調整・様子見ゾーン）**: 調整が始まったばかりの初期段階。ここから反発するか、さらに下落が深まるかを見極める保留ゾーンです。
+              * 🟢 **`-7.0% 〜 -20.0%`（青信号・絶好の押し目買い好機）**: 上昇トレンド中の健全な利益確定売りが一巡し、25日移動平均線で反発しやすい最も安全で勝率の高い買い場です。
+              * ⚪ **`-20.1% 〜 -34.9%`（深押し・反発観察ゾーン）**: 調整がやや長引いている状態。下げ止まり（サポートラインでのもみ合い）を確認してから仕掛けるべきゾーンです。
+              * 🟣 **`-35.0% 超`（紫信号・底割れ警戒）**: 高値から大暴落した後の状態。過去の高値掴み組の戻り売り（しこり玉）が大量に待ち構えているため手出し無用です。
+            """)
+
+        # 25日線乖離率
+        with st.expander("📏 25日移動平均線乖離率（%）"):
+            st.markdown("""
+            > 💡 **要約**: 株価の過熱感と割安度（全範囲の完全判定早見表）
+
+            * **用語の意味**: 直近25日間の平均購入価格から、現在の株価がどれくらい離れているかを表す過熱感メーターです。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * ⚠️ **`+15.0% 以上`（赤・過熱警戒シグナル）**: 急上昇して買われすぎている過熱状態。短期的な反落リスクが極めて高いため、飛びつき買いは厳禁です。
+              * ⚪ **`+7.1% 〜 +14.9%`（中立・上昇キープゾーン）**: 強い上昇トレンドを維持しているが、新規買いには少し引きつけが足りない中間ゾーンです。
+              * 🎯 **`0.0% 〜 +7.0%`（青信号・好機シグナル）**: 25日移動平均線のすぐ上にあり、移動平均線を床（サポート）にして綺麗に反発する最も安全な買い場です。
+              * 🔄 **`マイナス（-）`（黄・調整シグナル）**: 株価が25日線の下に潜り込んでおり、再び25日線を上抜けて陽線をつけるまで待つべき調整局面です。
+            """)
+
+        # 時価総額
+        with st.expander("🏢 時価総額（億円）"):
+            st.markdown("""
+            > 💡 **要約**: 会社の身軽さと大化け余力（全範囲の完全判定早見表）
+
+            * **用語の意味**: `現在の株価 × 発行済み株式数` で計算され、「その会社を丸ごと全部買い占めるのに必要なお金」を表します。
+            * **数値の読み取り方（隙間なし完全判定）**:
+              * 👑 **`100億円 〜 200億円未満`（理想のサイズ）**: 身軽で数倍化（テンバガー）が最も狙いやすく、これから機関投資家が買い始めるゴールデンゾーンです。
+              * ✅ **`200億円 〜 300億円`（合格ライン）**: 小型成長株として十分身軽に値上がりできる上限サイズです。
+              * ⚪ **`300億円 〜 500億円`（中小型ゾーン）**: 安定感は増しますが、短期急騰の爆発力は徐々にマイルドになる中間サイズです。
+              * ❌ **`500億円超`（対象外）**: 大企業・中堅企業で急騰余力が小さいため、小型株集中投資の対象外です。
+            """)
+
+        # 単元株と1株取引
+        with st.expander("💰 単元株（100株）と 1株価格（単元未満株）"):
+            st.markdown("""
+            > 💡 **要約**: 資金に合わせた賢い買い方
+
+            * **用語の意味**:
+              * **単元株（100株）**: 通常の証券取引所で売買される基本セット（お菓子の箱買い）。
+              * **単元未満株（1株取引）**: 100株セットをバラして、1株単位で買える少額投資サービス（お菓子の1個バラ売り）。
+            * **数値の読み取り方**:
+              * **単元購入額 `10万円以下`**: 株価1,000円以下の銘柄なら、10万円の元手で100株丸ごと購入可能です。
+              * **単元購入額 `20万〜50万円`**: 100株だとまとまった資金が必要ですが、1株取引なら右側の **「1株価格（数百円〜数千円）」** から気軽に少額投資が始められます。
+            """)
+
+        # 創業者・役員保有比率（インサイダー比率）
+        with st.expander("👔 創業者・役員保有比率（%）"):
+            st.markdown("""
+            > 💡 **要約**: 経営陣の本気度と利害の一致
+
+            * **用語の意味**: 社長や取締役が、自社の株を何％自分で持っているかを表します。
+            * **数値の読み取り方**:
+              * 👑 **`20% 〜 70%`（理想的オーナー経営）**: 社長自身の資産と株価が直結しているため、「株価を何倍にも引き上げる熱量」がサラリーマン社長とは桁違いです。
+              * ❌ **`数% 以下`（警戒）**: 外部から送り込まれた雇われ社長が多く、短期的な保身に走りやすい傾向があります。
+            """)
+
+        # PER
+        with st.expander("⚖️ PER（株価収益率・倍）"):
+            st.markdown("""
+            > 💡 **要約**: 稼ぐ力に対する株価のお買い得度
+
+            * **用語の意味**: 会社の純利益に対して、株価が何倍まで買われているかを表します。「投資した資金を今の利益ペースで何年で回収できるか」の目安です。
+            * **数値の読み取り方**:
+              * 🟢 **`15倍 〜 40倍以下`（適正・安全圏）**: 成長性と価格のバランスが良く、割高すぎない水準です。
+              * 🟡 **`60倍 〜 100倍超`（超割高期待）**: 市場から将来の爆発的成長が織り込まれており、決算で少しでも期待を下回ると急落するリスクを伴います。
+            """)
+
+        # 財務健全性（実質無借金）
+        with st.expander("🛡️ 財務健全性（実質無借金）"):
+            st.markdown("""
+            > 💡 **要約**: 倒産リスクゼロの安心感
+
+            * **用語の意味**: 会社の手元にある「現金・預金」が、銀行からの「借金（有利子負債）」を上回っている状態です。
+            * **読み取り方**:
+              * **`実質無借金`**: 集中投資の最大の恐怖である「突然の倒産」が原理的に極めて起こりにくく、不況期でも事業投資を続けて生き残れる最強の財務体質です。
+            """)
+
+        # 四季報
+        with st.expander("📚 会社四季報（要約）"):
+            st.markdown("""
+            > 💡 **要約**: 全上場企業の通信簿
+
+            * **用語の意味**: 東洋経済新報社が年4回発行する、日本中の上場企業のビジネスモデル、財務、業績予想、社員年齢などが網羅された百科事典です。
+            * **読み取り方**: 本アプリの「特徴・サービス」欄には、四季報の重要要約が自動抽出されており、どんな商品で誰からお金をもらっているかが一目で掴めます。
+            """)
+
+    # 2. チャート・テクニカル用語の読み方
+    with st.container(border=True):
+        st.markdown("### 📈 チャート・テクニカル用語 ＆ 売買タイミングの読み取り方")
+        
+        with st.expander("📈 25日／75日移動平均線（MA）"):
+            st.markdown("""
+            > 💡 **要約**: 過去の平均買い値とトレンドの方向を示す命綱
+
+            * **25日移動平均線（緑・短期線）**:
+              * 過去25営業日（約1ヶ月）にその株を買った投資家の平均購入単価です。
+              * 株価が25日線の上を推移していれば「直近買った人たちが含み益で強気」の状態。株価が下がってきても、この線に触れて反発しやすい **「最強の押し目買いサポートライン（床）」** になります。
+            * **75日移動平均線（オレンジ・中期線）**:
+              * 過去75営業日（約3ヶ月・四半期決算1回分）の平均購入単価です。
+              * 会社の実力（業績成長）が本物かどうかを判定する中期トレンドの絶対防衛ラインとなります。
+            * **数値・サインの読み取り方**:
+              * 🟢 **`ゴールデンクロス（25日線が75日線を下から上抜け）`**: 短期の勢いが中期の平均を上回り、本格的な大化け上昇トレンドが開始した最高の買いシグナルです。
+              * ⚠️ **`25日線割れ`**: 一時的な調整局面。すぐに反発すれば絶好の押し目ですが、75日線まで調整が長引くリスクに警戒します。
+            """)
+
+        with st.expander("🕯️ ローソク足（赤と青・陽線と陰線）"):
+            st.markdown("""
+            > 💡 **要約**: 買い手と売り手の戦いの記録
+
+            * **赤色のローソク（陽線）**: スタート（始値）よりもゴール（終値）が高く終わった状態。買い手が勝った強い日です。
+            * **青色のローソク（陰線）**: スタートよりもゴールが安く終わった状態。売り手が勝った弱い日です。
+            * **ヒゲ（上下に伸びる細い線）**: その期間中に一時的につけた最高値（上ヒゲ）や最安値（下ヒゲ）を表します。長い下ヒゲが出ると「安値で強烈に買い支えられた反発シグナル」になります。
+            """)
+
+        with st.expander("🚀 パーフェクトオーダー ＆ 上昇トレンド"):
+            st.markdown("""
+            > 💡 **要約**: 最強の買い相場状態
+
+            * **状態**: 上から順に **`株価 ＞ 25日移動平均線（緑） ＞ 75日移動平均線（オレンジ）`** と並び、すべての線が右肩上がりの状態。
+            * **読み取り方**: 直近買った人も、数ヶ月前から持っている人も「全員が含み益」を出しており、売り急ぐ人がいないため株価が最も伸びやすい最強のトレンド状態です。
+            """)
+
+        with st.expander("🎯 押し目買い"):
+            st.markdown("""
+            > 💡 **要約**: 上昇途中のバーゲンセールを拾う技
+
+            * **意味**: ずっと上がり続ける株はなく、途中で必ず一時的な利益確定売りで少し下がる（調整する）波があります。この「一時的な調整安」を狙って買う手法です。
+            * **成功の目安**: 25日移動平均線に株価がタッチして、下ヒゲを出して反発した瞬間を拾うことで、高値掴みを防ぎながら安値で仕込めます。
+            """)
+
+        with st.expander("🧱 サポレジ（サポートラインとレジスタンスライン）"):
+            st.markdown("""
+            > 💡 **要約**: 価格の床と天井
+
+            * **レジスタンスライン（上値抵抗線・天井）**: 過去に高値をつけた価格水準。ここで買った人たちが「やれやれ、買値に戻ったから売ろう」と売り注文を出すため、株価が弾き返されやすい天井です。
+            * **サポートライン（下値支持線・床）**: 移動平均線や過去の安値水準。「ここまでは下がらないだろう」と買い注文が待ち構えている頑丈な床です。
+            * **立ち回り**: 天井の手前で買うのは危険（飛びつき厳禁）。床まで引きつけるか、天井を完全に突き破った後に買うのが鉄則です。
+            """)
+
+        with st.expander("🗼 イナゴタワー ＆ 全戻し"):
+            st.markdown("""
+            > 💡 **要約**: 仕手株・材料株の罠
+
+            * **意味**: SNSやネット掲示板で急に話題になり、短期トレーダー（イナゴ）が一斉に群がって垂直上昇（タワー形成）したあと、大口が売り抜けて全員が一斉に投げ売りし、元の株価まで急落すること。
+            * **見分け方**: 本業の売上成長（ファンダメンタルズ）の裏付けがなく、数日だけ急騰した株は危険。本アプリのスクリーナーは「売上+20%以上の本物の成長企業」に限定することで、この罠を事前に排除しています。
+            """)
+
+    # 3. イノベーター理論の売買フェーズ
+    with st.container(border=True):
+        st.markdown("### 💡 イノベーター理論 普及フェーズと売買タイミング")
+        st.markdown("""
+        遠藤洋氏の投資手法の真髄は、**『世間がその商品に気づき始めた瞬間に買い、誰もが知るブームになった瞬間に売る』** という人間心理の先回りです。
+        """)
+
+        with st.expander("🟢 アーリーアダプター期（買い時・初期採用者フェーズ）"):
+            st.success("""
+            * **普及率**: 2.5% 〜 16%
+            * **状態**: 流行に敏感な若者やアンテナの高い人たちが使い始め、テレビCMやYouTube広告、タクシー広告が始まったタイミング。
+            * **判断**: 世間一般の人はまだ「そんなの知らん」「怪しい」と慎重。**『まわりが慎重なら買い』** の法則が発動する絶好の仕込み場です。
+            """)
+
+        with st.expander("🔴 レイトマジョリティ期（売り時・過熱天井フェーズ）"):
+            st.warning("""
+            * **普及率**: 50% 〜 84%
+            * **状態**: テレビのワイドショーで特集され、普段投資をしない友人や親戚まで「あの株儲かるらしいよ」と口にし始めたタイミング。
+            * **判断**: これ以上新しい買い手が入ってこない天井圏。**『まわりが興味を持ったら売り』** の金言通り、利益を確定して立ち去る時です。
+            """)
+
+    # 4. 取引ルール ＆ 相場・注文の重要用語
+    with st.container(border=True):
+        st.markdown("### 🏛️ 取引ルール ＆ 相場・注文の重要用語")
+
+        with st.expander("🚀 ストップ高（S高） ＆ 🛑 ストップ安（S安）"):
+            st.markdown("""
+            > 💡 **要約**: 1日の価格変動ブレーキ（制限値幅）
+            
+            * **用語の意味**:
+              * 日本の株式市場（東証）では、パニックや過度な投機で株価が一瞬で0円になったり何倍にも暴走するのを防ぐため、前日の終値を基準に **「1日に動ける上下の限界幅（制限値幅）」** が定められています。
+              * その日の上限まで株価が上昇することを **「ストップ高（S高）」**、下限まで暴落することを **「ストップ安（S安）」** と呼びます。
+            * **取引の仕組み（比例配分）**:
+              * ストップ高で買い注文が売り注文を圧倒的に上回った場合、取引終了時に抽選で株を割り当てる「比例配分（ひれいはいぶん）」が行われます。
+            * **実践的な立ち回り・読み取り方**:
+              * 👑 **ストップ高の翌日**: 強い好決算や特大ニュースを背景にしたS高は、翌日もGU（ギャップアップ・高く始まる）する傾向があります。ただし、翌日の寄付き直後に「材料出尽くし」で大陰線を引くリスクもあるため、飛びつき買いは厳禁です。
+              * ⚠️ **ストップ安の警戒**: 悪材料で連続ストップ安になると、売りたいのに買い手がつかず何日も損切りできないリスクがあります。
+            """)
+
+        with st.expander("⚡ 成行（なりゆき）注文 ＆ 🎯 指値（さしね）注文"):
+            st.markdown("""
+            > 💡 **要約**: 「今すぐ買う」vs「値段を決めて待つ」
+            
+            * **成行（なりゆき）注文**:
+              * 価格を指定せず、「いくらでもいいから今すぐ買いたい（売りたい）」という注文です。最優先で即座に取引が成立します。
+              * ⚠️ **初心者の注意点**: 急騰している小型株を成行で買うと、想定外の超高値で約定してしまい、買った瞬間に大損（高値掴み）する危険があります。
+            * **指値（さしね）注文**:
+              * 「1,200円以下なら買う」「1,500円以上なら売る」と希望価格を指定する注文です。
+              * 🟢 **遠藤洋式の基本**: 感情に流されず、「自分が納得した適正価格まで引きつけて待つ」のが原則のため、買い注文は指値が基本です。
+            """)
+
+        with st.expander("🛡️ 逆指値（ぎゃくさしね・ストップロス）注文"):
+            st.markdown("""
+            > 💡 **要約**: 大損を絶対に防ぐ「自動ブレーキ装置」
+            
+            * **用語の意味**:
+              * 通常の指値とは逆に、「株価が○○円まで下がったら、自動で売却する（損切りする）」と事前に予約しておく注文です。
+            * **実践的な重要性**:
+              * 集中投資で最も大切なのは「1回の大暴落で資金を吹き飛ばさないこと」。
+              * どんな凄腕投資家でも予測を外すことはあります。買った瞬間に **「買値から -10%（または直近安値）」** に逆指値を入れておくことで、仕事中や夜間でも感情を挟まず自動で損失を限定できます。
+            """)
+
+        with st.expander("📊 出来高（できだか・売買高）"):
+            st.markdown("""
+            > 💡 **要約**: 相場のエネルギーと人気のバロメーター
+            
+            * **用語の意味**: その日やその週に、取引所で実際に売り買いされた「株の総数」です。
+            * **数値の読み取り方**:
+              * 🚀 **出来高急増 ＋ 株価上昇（本物の買い）**: 機関投資家や大口の本格的な資金が大量に流入している証拠。上昇トレンドが長続きしやすい最強のシグナルです。
+              * 💤 **出来高過疎（閑散相場）**: 誰からも見向きされていない状態。小型株では一度出来高が枯れると、売りたい時に売れなくなる流動性リスクがあります。
+            """)
+
+        with st.expander("💣 信用取引 ＆ 信用買い残（ざん）・シコリ玉"):
+            st.markdown("""
+            > 💡 **要約**: 借金トレードの残骸と将来の売り圧力
+            
+            * **用語の意味**:
+              * **信用取引**: 証券会社に担保を預け、自己資金の約3.3倍のレバレッジをかけて株を買う（または空売りする）手法。最長6ヶ月以内に必ず決済（反対売買）しなければなりません。
+              * **信用買い残**: 借金して買った投資家が、まだ決済せずに持っている株の残高です。
+            * **なぜ重要なのか（シコリ玉）**:
+              * 信用買い残が多い銘柄が下落すると、含み損を抱えた個人投資家が大量に捕まります。株価が少し上がると「やれやれ、買値に戻ったから損切り・返済しよう」と大量の売りが降ってくるため（シコリ玉）、上値が極めて重くなります。
+            """)
+
+        with st.expander("⚖️ 信用倍率（しんようばいりつ・倍）"):
+            st.markdown("""
+            > 💡 **要約**: 買い手と売り手の需給バランス
+            
+            * **計算式**: `信用買い残 ÷ 信用売り残`
+            * **数値の読み取り方**:
+              * 🟢 **`1倍 未満`（売り手優勢・好需給）**: 信用で売っている人（空売り）の方が多く、将来必ず買い戻さなければならないため、株価が上昇した際に「踏み上げ相場（空売りの買い戻しで爆発急騰）」が起きやすい好需給です。
+              * 🟡 **`1倍 〜 5倍`（標準水準）**: 需給バランスが取れた一般的な水準。
+              * 🔴 **`10倍 〜 数十倍超`（買い残過多・需給悪化）**: 借金で買った人が圧倒的に多く、将来の売り圧力が山積みになっている状態。業績が良くても株価が上がりにくいため、警戒が必要です。
+            """)
+
+    # 5. 投資指標 ＆ 企業アクション用語
+    with st.container(border=True):
+        st.markdown("### 🏢 投資指標 ＆ 企業アクションの重要用語")
+
+        with st.expander("🏢 PBR（株価純資産倍率・倍）"):
+            st.markdown("""
+            > 💡 **要約**: 会社の解散価値に対する割安度
+            
+            * **用語の意味**: 会社の純資産に対して、株価が何倍まで評価されているかを表します。
+            * **数値の読み取り方**:
+              * **`1倍`**: 「株価の合計（時価総額）」と「会社を今すぐ解散した時に株主に配れる現金価値」がちょうどイコール。理論上の底値目安。
+              * 🟢 **`1倍 割れ（0.5倍〜0.8倍）`**: 解散価値よりも安く放置されている状態（東証がPBR1倍割れ改善を強く要請中）。
+              * 🚀 **小型成長株（2倍〜5倍以上）**: 成長株は工場やビルなどの物的資産よりも「将来の稼ぐアイデアやITシステム」が価値の源泉のため、PBRが高くなるのが普通です。
+            """)
+
+        with st.expander("💡 ROE（自己資本利益率・%）"):
+            st.markdown("""
+            > 💡 **要約**: 株主のお金をどれだけ上手に増やしたか（経営効率）
+            
+            * **用語の意味**: 株主が出資したお金（自己資本）を使って、会社が1年間でどれだけ純利益を稼ぎ出したかのパーセンテージです。
+            * **数値の読み取り方**:
+              * 👑 **`15% 〜 20% 以上`（超優秀な高収益企業）**: 集めたお金を無駄に寝かせず、効率的に新規事業へ回して高利益を生み出す一流経営者の証拠。
+              * ⚠️ **`5% 未満`（低効率）**: お金を銀行に寝かせているだけで、株主の元手を有効活用できていない状態。
+            """)
+
+        with st.expander("🎁 配当利回り ＆ 自社株買い（株主還元）"):
+            st.markdown("""
+            > 💡 **要約**: 利益の分け前 vs 事業への全額再投資
+            
+            * **配当利回り**: 株価に対して、年間何％の配当金がもらえるかの利回り。
+            * **自社株買い**: 企業が自分のお金で市場の自社株を買い戻して消却し、1株の価値を直接引き上げる施策。
+            * **小型株集中投資の視点（小型成長株の本質）**:
+              * 初心者は「配当利回り4%」などの高配当株を好みますが、**「株価が2倍〜3倍になる小型成長株」を狙う場合、配当金は無配（0円）や低配当で十分**です。
+              * なぜなら、利益を配当として配ってしまうより、新規出店や開発費、広告CMに全額再投資して売上を何倍にも急拡大させてくれた方が、結果的に株価が何倍にもなって投資家の利益が圧倒的に大きくなるからです。
+            """)
+
+        with st.expander("✂️ 株式分割（かぶしきぶんかつ）"):
+            st.markdown("""
+            > 💡 **要約**: 株を小さく切り分けて買いやすくするお祭り
+            
+            * **用語の意味**: 例えば「1株を2株（または5株）に分割」すること。会社の価値（時価総額）は変わりませんが、1株あたりの株価が半分になり、株数が増えます。
+            * **株価への影響**:
+              * 100株買うのに100万円かかっていた株が、分割によって50万円で買えるようになるため、個人投資家の買いが殺到し、株価が急上昇する強い追い風材料（ポジティブイベント）になりやすいです。
+            """)
+
+        with st.expander("⚠️ 公募増資（PO） ＆ 第三者割当増資（株式の希薄化）"):
+            st.markdown("""
+            > 💡 **要約**: 新株を刷って資金集め（株主にとっての希薄化リスク）
+            
+            * **用語の意味**: 企業が新しく株を印刷・発行して、投資家や提携企業から数十億〜数百億円の資金を調達すること。
+            * **株価への影響（希薄化）**:
+              * ピザのサイズ（会社の価値）が同じまま、ピースの数だけ増やすようなものなので、**「1株あたりの利益や価値が薄まる（希薄化・ダイリューション）」** ため、発表直後は株価が急落しやすいリスクがあります。
+              * ※ただし、集めた資金で大型M&Aや爆発的成長を遂げる「前向きな増資」の場合は、後から株価が急回復することもあります。
+            """)
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("✕ ウィンドウを閉じる", key="close_terms_modal", use_container_width=True):
+        st.rerun()
+
+# ==========================================
+# アプリ最上部ナビゲーションタブ（主要2タブに厳選）
+# ==========================================
+tab1, tab2 = st.tabs([
+    "📋 厳選小型株一覧", 
+    "💼 1日5分保有株ウォッチ"
+])
 # ==========================================
 # タブ1：一覧テーブル ＆ 詳細分析 (フォーカス表示対応)
 # ==========================================
@@ -3735,673 +4417,29 @@ with tab2:
 
 
 
-# ==========================================
-# タブ：使い方 ＆ データ安心マップ（端末個別保存・一括バックアップ）
-# ==========================================
-with tab_guide:
-    with st.container(border=True):
-        st.markdown("""
-        ### 🔰 TOTOTO-KABU 基本操作ガイド（簡単4ステップ）
-        当アプリは、プロ投資家・遠藤洋氏の『小型株集中投資で1億円』の選定基準に基づき、急成長する小型株を直感的に発掘・監視できるダッシュボードです。
-        """)
-
-        g_c1, g_c2 = st.columns(2)
-        with g_c1:
-            st.markdown("""
-            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
-                <div style="font-weight: 800; color: #1E3A8A; font-size: 0.95rem; margin-bottom: 6px;">
-                    ① プリセットで一発スクリーニング
-                </div>
-                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
-                    サイドバーの「👑 ①王道・集中投資型」や「🔥 全条件クリア」を押すだけで、書籍の理想条件（売上+20%以上、社長大株主、時価総額200億円以下など）を満たすお宝候補銘柄が即座に絞り込まれます。
-                </div>
-            </div>
-            <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
-                <div style="font-weight: 800; color: #166534; font-size: 0.95rem; margin-bottom: 6px;">
-                    ② 深掘りカードでAIリサーチ ＆ CM確認
-                </div>
-                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
-                    一覧から気になる銘柄を選択すると、「深掘り分析カード」が開きます。「📋 プロンプトコピー」を押してChatGPTやGrokに貼るだけで、SNS感情分析や競合優位性をプロ級に調査できます。
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-        with g_c2:
-            st.markdown("""
-            <div style="background: #FEF3C7; border: 1.5px solid #FDE68A; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
-                <div style="font-weight: 800; color: #92400E; font-size: 0.95rem; margin-bottom: 6px;">
-                    ③ メモ入力 ＆ 保有株ウォッチ登録
-                </div>
-                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
-                    「⭐ 検討・監視リストに入れる」を押すと、タブ2の『💼 保有株ウォッチ』に追加されます。銘柄ごとの独自メモも入力可能で、<strong>あなたのお使いの端末だけに完全非公開で安全保存</strong>されます。
-                </div>
-            </div>
-            <div style="background: #FAF5FF; border: 1.5px solid #E9D5FF; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
-                <div style="font-weight: 800; color: #6B21A8; font-size: 0.95rem; margin-bottom: 6px;">
-                    ④ 1日5分！保有株の株価・決算点検
-                </div>
-                <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
-                    日々のルーティンは『💼 1日5分保有株ウォッチ』を開くだけ。登録銘柄の株価動向や決算発表予定日を一覧でサッとチェックできます。
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("---")
-
-        # --- 🛡️ データ分類の完全マップ ---
-        st.markdown("""
-        ### 🛡️ データ安心マップ（端末個別保存 vs Web共有データ）
-        当アプリでは、プライバシーとセキュリティを最優先に設計しています。<strong>あなたが入力したメモや保有株リストはサーバー上に一切保存されず、お使いの端末（ブラウザ）の中だけに独立して保持されます。</strong><br>
-        第三者が当アプリにアクセスしても、あなたのデータが閲覧されたり、改ざんされたりすることは構造上100%ありません。
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-          <thead>
-            <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
-              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">データ項目</th>
-              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">保存場所</th>
-              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">第三者の閲覧</th>
-              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; color: #FFFFFF !important;">改ざんリスク</th>
-              <th style="padding: 10px 12px; border: 1px solid #CBD5E1; color: #FFFFFF !important;">バックアップ・移行</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr style="background: #F0FDF4;">
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #166534;">📝 銘柄個別メモ (自作コメント)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
-            </tr>
-            <tr style="background: #FFFFFF;">
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">💼 保有株・ウォッチリスト</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
-            </tr>
-            <tr style="background: #F8FAFC;">
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🎯 検討仕分け (候補/見送り)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">📱 あなたの端末内のみ</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🔒 100%不可能 (完全非公開)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #16A34A;">🛡️ 100%遮断 (安全)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">下のボタンで一括保存/復元</td>
-            </tr>
-            <tr style="background: #EFF6FF;">
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E40AF;">🌐 厳選小型株リスト (全126社等)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">☁️ クラウドサーバー</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 全員共通 (公開)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 閲覧者による変更不可</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">スクリーナー自動最新化</td>
-            </tr>
-            <tr style="background: #FFFFFF;">
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📈 株価チャート・財務指標</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #1E293B;">📊 市場API (Yahoo!等)</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; color: #475569;">👥 公開市場データ</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #16A34A;">🛡️ 改ざん不可</td>
-              <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-size: 0.82rem; color: #334155;">リアルタイム自動取得</td>
-            </tr>
-          </tbody>
-        </table>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("---")
-
-        # --- 💾 全データ一括バックアップ ＆ 一括復元 ---
-        st.markdown("""
-        ### 💾 全メモ・保有株データの一括バックアップ ＆ 復元
-        機種変更をされる際や、別のスマートフォン・PCとお手元のメモ・保有株を同期したい場合は、こちらをご利用ください。
-        """)
-
-        bk_c1, bk_c2 = st.columns(2)
-        with bk_c1:
-            st.markdown("#### 📥 データを保存する (バックアップ)")
-            st.caption("全銘柄のメモ、保有株ウォッチリスト、仕分け判定を1つのファイル（JSON）にまとめてダウンロードします。")
-            
-            import json
-            backup_dict = {
-                "version": "1.0",
-                "app": "TOTOTO-KABU",
-                "exported_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "stock_notes": st.session_state.get("stock_notes", {}),
-                "my_watchlist": st.session_state.get("my_watchlist", []),
-                "stock_status": st.session_state.get("stock_status", {})
-            }
-            json_str = json.dumps(backup_dict, ensure_ascii=False, indent=2)
-            export_filename = f"tototo_kabu_backup_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.json"
-            
-            st.download_button(
-                label="📥 全データを一括ダウンロード (JSON)",
-                data=json_str,
-                file_name=export_filename,
-                mime="application/json",
-                use_container_width=True,
-                key="btn_backup_download"
-            )
-            note_cnt = len(st.session_state.get("stock_notes", {}))
-            watch_cnt_total = len(st.session_state.get("my_watchlist", []))
-            st.caption(f"📊 現在の端末保存データ: メモ **{note_cnt} 件** / 保有株 **{watch_cnt_total} 件**")
-
-        with bk_c2:
-            st.markdown("#### 📤 データを読み込む (一括復元)")
-            st.caption("以前ダウンロードしたバックアップファイル（JSON）を選択すると、全銘柄のメモや保有株が一瞬で完全復元されます。")
-            
-            uploaded_bk = st.file_uploader("バックアップファイル (.json) を選択", type=["json"], key="uploader_backup_restore")
-            if uploaded_bk is not None:
-                try:
-                    restore_data = json.load(uploaded_bk)
-                    if isinstance(restore_data, dict):
-                        restored_notes = restore_data.get("stock_notes", {})
-                        restored_watch = restore_data.get("my_watchlist", [])
-                        restored_status = restore_data.get("stock_status", {})
-                        
-                        st.session_state.stock_notes = restored_notes
-                        st.session_state.my_watchlist = restored_watch
-                        st.session_state.stock_status = restored_status
-                        
-                        st.success(f"🎉 復元成功！ (メモ: {len(restored_notes)}件, 保有株: {len(restored_watch)}件 を読み込みました)")
-                        if st.button("🔄 画面を最新状態で再読み込み", use_container_width=True):
-                            st.rerun()
-                    else:
-                        st.error("⚠️ 正しいバックアップファイル形式ではありません。")
-                except Exception as e:
-                    st.error(f"⚠️ 読み込み中にエラーが発生しました: {e}")
-
 
 # ==========================================
-# タブ3：遠藤洋氏の投資メソッド完全ガイド
+# 📚 投資サポート・各種ガイド（モーダルウィンドウ起動メニュー）
 # ==========================================
-with tab3:
-    with st.container(border=True):
-        st.markdown("""
-### 🎯 目的別フィルターパターンの厳格度 ＆ 狙い完全比較表
-当アプリの4大おすすめプリセットと初期状態が、書籍の選定基準にどのように準拠しているか、厳格度（★3〜★6）と狙いをまとめた早見表です。
+st.markdown("<br><hr style='margin: 36px 0 20px 0; border: none; border-top: 1px solid #CBD5E1;'>", unsafe_allow_html=True)
+st.markdown("""
+<div style="text-align: center; margin-bottom: 16px;">
+    <h3 style="margin: 0; color: #1E293B; font-weight: 800; font-size: 1.15rem;">📚 投資サポート・完全マニュアル</h3>
+    <p style="margin: 4px 0 0 0; color: #64748B; font-size: 0.85rem;">タップするとポップアップ画面が開き、右上の「✕」でいつでも閉じられます</p>
+</div>
 """, unsafe_allow_html=True)
 
-        st.markdown("""<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0 20px 0;">
-<table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; background: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-  <thead>
-    <tr style="background: #1E3A8A; color: #FFFFFF; font-weight: 700; text-align: left;">
-      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 120px; color: #FFFFFF !important;">パターン名</th>
-      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 130px; color: #FFFFFF !important;">準拠度・厳格度</th>
-      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; text-align: center; min-width: 90px; color: #FFFFFF !important;">該当社数目安</th>
-      <th style="padding: 10px 12px; border: 1px solid #CBD5E1; min-width: 220px; color: #FFFFFF !important;">基準の厳しさと狙い</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr style="background: #FFFBEB;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #B45309;">🔥 全条件クリア・超お宝型</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★★<br><span style="font-size:0.75rem; color:#475569;">(究極・奇跡のフルコンプ)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">1社〜数社<br><span style="font-size:0.75rem; color:#64748B;">(時期により0社)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>全11条件を100点満点で全クリした奇跡の銘柄</strong>。<br><span style="font-size:0.82rem; color:#475569;">（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも<em>「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」</em>とされる極限の絞り込みです。</span></td>
-    </tr>
-    <tr style="background: #FFFFFF;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">👑 ① 王道・集中投資型</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★<br><span style="font-size:0.75rem; color:#475569;">(最も厳格・理想の本命)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜20社</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>書籍P.1の理想5大条件を厳密適用</strong>。<br><span style="font-size:0.82rem; color:#475569;">時価総額200億以下、売上+20%以上、社長30%以上、無借金、上昇トレンド。<br>最も再現性が高く、投資メソッドの真髄となる本命パターンです。</span></td>
-    </tr>
-    <tr style="background: #F8FAFC;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🛡️ ② 堅実安全・押し目型</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #2563EB;">★★★★☆<br><span style="font-size:0.75rem; color:#475569;">(手堅い安全重視)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約15〜25社</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">基本条件に「割安PER × 高値から下がった押し目」を掛け合わせ、高値掴みを防いで安く仕込む守りの設定です。</td>
-    </tr>
-    <tr style="background: #FFFFFF;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #1E3A8A;">🚀 ③ テンバガー狙い型</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #EA580C;">★★★★☆+<br><span style="font-size:0.75rem; color:#475569;">(超高成長特化)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">約10〜15社</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">売上成長率を「+30%以上」に引き上げ、10倍株（テンバガー）の爆発力を持つ企業のみを狙い撃つ攻撃的設定です。</td>
-    </tr>
-    <tr style="background: #F8FAFC;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #475569;">📋 デフォルト（初期状態）</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #64748B;">★★★☆☆<br><span style="font-size:0.75rem; color:#475569;">(基本合格ライン)</span></td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">全126社</td>
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;">時価総額300億円以下、売上+20%以上、社長比率20%以上。<br>最低合格ラインをクリアした全銘柄を広く見渡すための母集団です。</td>
-    </tr>
-  </tbody>
-</table>
-</div>""", unsafe_allow_html=True)
-
-        st.markdown("""
----
-
-### 📖 『小型株集中投資で1億円』の選定メソッド完全まとめ
-
-#### 1. 1年以内に3倍以上になる成長株 8つのチェックポイント (書籍P.1)
-1. **上場して5年以内の会社** (初々しく成長余力が大きい)
-2. **時価総額が小さい (300億円以下)** (大企業と違い、身軽に数倍・十倍化が可能)
-3. **創業社長が現役** (情熱と意思決定のスピードが圧倒的)
-4. **社長や経営幹部が大株主** (経営陣の利益と株主の利益が完全一致)
-5. **高学歴の新卒社員がいる** (成長企業には優秀な若者が集まる)
-6. **社員の平均年齢が若い** (20代〜30代前半。活気と柔軟性がある)
-7. **みんなが欲しいと思う商品を提供している** (中学生でもわかるシンプルな需要)
-8. **株価チャートが上昇トレンド** (25日・75日移動平均線上向き。下降トレンドは絶対NG)
-
----
-
-#### 2. 💡 イノベーター理論による売買タイミング 普及フェーズ判定 (書籍P.13〜19)
-* **【買い時】アーリーアダプター期 (初期採用者)**:
-  アンテナの高い感度の良い人が使い始めた段階。世間の認知はまだ「怪しい」「一部の流行」。企業がCM・広告に力を入れ始め、キャズム（普及率16%）を超える直前。**株価急騰の初動！**
-* **【売り時】レイトマジョリティ期 (後期追随者)**:
-  普段新しいものを使わない一般層や保守層まで知れ渡った段階。一般人が熱狂し、ワイドショーやSNSで大騒ぎされた時。株価はすでに織り込み済みで天井圏のリスク大。
-""")
-
-        st.info("""
-**📖 遠藤洋氏の格言:**
-『まわりの人が **「まだ怪しい」** と言っている時は **買い**。
-**「みんな使っている」** と言い始めたら **売り**。』
-""")
-
-        st.markdown("""
----
-
-#### 3. 株式投資でやってはいけない8つのこと (書籍P.20)
-* ❌ 分散投資はやってはいけない (少額資金なら1〜3銘柄に集中)
-* ❌ 下がった株を持ち続けてはいけない (-10〜20%で即損切り)
-* ❌ 有名な大企業の株は買ってはいけない
-* ❌ 株価を見て株を買ってはいけない
-* ❌ Twitterで盛り上がっている株を買ってはいけない (イナゴ買い厳禁)
-* ❌ 理解できない株を買ってはいけない
-* ❌ 銀行や証券会社がすすめる投資信託を買ってはいけない
-* ❌ 他人に預ける投資はやってはいけない
-""")
-
-
-# ==========================================
-# タブ4：iSPEED設定ヘルプガイド
-# ==========================================
-with tab4:
-    with st.container(border=True):
-        st.markdown("""
-        ### 📱 楽天証券 iSPEED「スーパースクリーナー」完全設定ガイド
-        スマホアプリ「iSPEED」で、当ダッシュボードと同じ条件（遠藤洋氏メソッド ＆ 1株少額投資対応）を再現し、毎日ワンタップで確認するための完全マニュアルです。
-
-        ---
-
-        #### 【ステップ1】スーパースクリーナーを開く
-        1. スマホで **iSPEED** アプリを開く
-        2. 画面下のメニューから **「検索」**（虫眼鏡アイコン）をタップ
-        3. 上部に並んでいるタブの中から **「スーパースクリーナー」** を選択
-        4. 画面右上の **「検索条件作成」**（または条件の追加）をタップ
-        5. 最上部のタブが **「国内株式」** になっていることを確認（※米国株ではなく国内株式のままでOK）
-
-        ---
-
-        #### 【ステップ2】基本画面の設定（上半分）
-        * **市場**: **「東S（スタンダード）」「東G（グロース）」** にチェックを入れる（※プライムは外す）
-        * **種別**: **「かぶミニ寄付」** にチェックを入れる
-          * ⚠️ **超重要**: 必ず「寄付」にしてください。「リアル」だけにすると小型成長株のほとんどが除外されてしまいます。
-        * **規模**: **「小型株」** にチェックを入れる
-
-        ---
-
-        #### 【ステップ3】詳細条件の追加（「⊕ 検索条件追加」から設定）
-        画面下部の **「⊕ 検索条件追加」** ボタンをタップし、以下の項目を順に追加します。
-
-        1. **時価総額（会社の身軽さ）**
-           * 「株価・財務」カテゴリ → **「時価総額」** を選択
-           * 設定値: **上限「300 億円」**（下限は空欄）
-        2. **売上高変化率（成長の勢い）**
-           * 「財務」カテゴリ → **「売上高変化率」** を選択
-           * 設定値: **下限「+20 %」**（今期予想 または 前期実績）
-        3. **予想PER（割安・適正水準）** ★超重要注意点！
-           * **必ず「財務」タブ** から **『PER（株価収益率）（倍）』** を選択
-           * ⚠️ **落とし穴注意**: 「コンセンサス情報」側のPERを選んではいけません。小型株はアナリスト予想がないため全滅してしまいます。必ず「財務」側を選んでください。
-           * 設定値: **上限「40 倍」**
-        4. **チャートトレンド（上昇トレンド判定）**
-           * 「テクニカル」カテゴリ → **「株価と移動平均」** を選択
-           * 設定値: **「株価が25日移動平均線上」** にチェック
-
-        ---
-
-        #### 【ステップ4】検索結果が「1件（または極端に少ない）」時の調整ワザ！
-        全条件を同時に満たす株は市場全体でも1〜2社しか存在しない「奇跡の超厳選株」です。  
-        **普段15〜25社の中から比較して選ぶためのおすすめ調整法**:
-        * 👉 **「予想PER 40倍以下」を一旦オフにする**  
-          （急成長株は人気でPERが高くなりやすいため、これを外すと一気に優良な急成長株が **15〜20件** に増えて選びやすくなります）
-
-        ---
-
-        #### 【ステップ5】検索条件を保存する（次からワンタップ！）
-        1. 画面右下の青緑色ボタン **「検索（〇〇件）」** をタップして結果を表示
-        2. 結果一覧画面の **右上にある「条件保存」** をタップ
-        3. 条件名に **「遠藤式・小型成長株」** と入力して保存！
-
-        > 💡 **次回からの確認方法**:  
-        > iSPEEDの「検索」→「スーパースクリーナー」→ **「保存条件」タブ** を開くだけで、いつでも最新の銘柄一覧が自動更新されてパッと表示されます。
-        """)
-
-
-# ==========================================
-# タブ5：投資・専門用語と数値の見方ガイド
-# ==========================================
-with tab5:
-    st.markdown("## 📖 投資・専門用語と数値の見方ガイド")
-    st.caption("💡 気になる用語をタップすると、意味や数値（プラス／マイナス）の判断目安が詳しく展開します。")
-
-    # 1. 一覧表の重要項目と数値の読み方
-    with st.container(border=True):
-        st.markdown("### 📊 一覧表の重要項目 ＆ 数値（＋／ー）の読み取り方")
-        
-        # 売上高成長率
-        with st.expander("📈 売上高成長率（%）"):
-            st.markdown("""
-            > 💡 **要約**: 本業の勢いと急成長の証拠（全範囲の完全判定早見表）
-
-            * **用語の意味**: 会社が本業のサービスや商品で稼いだ「売上」が、去年に比べてどれくらい増えたかを表す最重要指標です。
-            * **数値の読み取り方（隙間なし完全判定）**:
-              * 🟢 **`+20.0% 以上`（青信号・理想の大化け水準）**: 本業が猛烈に急拡大。3年で約1.7倍、4年で2倍に成長する本物の大化け成長株です。
-              * ⚪ **`+10.0% 〜 +19.9%`（中立・及第点ゾーン）**: 黒字で順調に成長中。合格圏ですが、1年で株価3倍を狙うにはやや勢い不足の標準ペースです。
-              * 🟡 **`0.0% 〜 +9.9%`（黄信号・鈍化警戒）**: 成長がストップしかけており、成熟企業・減速の兆候。小型株集中投資としては勢い不足です。
-              * 🔴 **`マイナス（-）`（赤信号・手出し無用）**: 前年の売上を割り込み本業が縮小。大化け投資の対象外です。
-            """)
-
-        # 高値比下落率
-        with st.expander("📉 高値比下落率（%）"):
-            st.markdown("""
-            > 💡 **要約**: 過去最高値からの値引き（バーゲン）度合（全範囲の完全判定早見表）
-
-            * **用語の意味**: 過去1年間の最も高かった株価（52週高値）から、現在どれくらい値下がりしているかを表します。
-            * **数値の読み取り方（隙間なし完全判定）**:
-              * 🟡 **`0.0% 〜 -3.0%`（高値警戒・飛びつき注意）**: 直近の天井（レジスタンス）直前。利益確定売りに押されやすいため、飛びつきを避けて押し目を待つのが賢明です。
-              * ⚪ **`-3.1% 〜 -6.9%`（浅い調整・様子見ゾーン）**: 調整が始まったばかりの初期段階。ここから反発するか、さらに下落が深まるかを見極める保留ゾーンです。
-              * 🟢 **`-7.0% 〜 -20.0%`（青信号・絶好の押し目買い好機）**: 上昇トレンド中の健全な利益確定売りが一巡し、25日移動平均線で反発しやすい最も安全で勝率の高い買い場です。
-              * ⚪ **`-20.1% 〜 -34.9%`（深押し・反発観察ゾーン）**: 調整がやや長引いている状態。下げ止まり（サポートラインでのもみ合い）を確認してから仕掛けるべきゾーンです。
-              * 🟣 **`-35.0% 超`（紫信号・底割れ警戒）**: 高値から大暴落した後の状態。過去の高値掴み組の戻り売り（しこり玉）が大量に待ち構えているため手出し無用です。
-            """)
-
-        # 25日線乖離率
-        with st.expander("📏 25日移動平均線乖離率（%）"):
-            st.markdown("""
-            > 💡 **要約**: 株価の過熱感と割安度（全範囲の完全判定早見表）
-
-            * **用語の意味**: 直近25日間の平均購入価格から、現在の株価がどれくらい離れているかを表す過熱感メーターです。
-            * **数値の読み取り方（隙間なし完全判定）**:
-              * ⚠️ **`+15.0% 以上`（赤・過熱警戒シグナル）**: 急上昇して買われすぎている過熱状態。短期的な反落リスクが極めて高いため、飛びつき買いは厳禁です。
-              * ⚪ **`+7.1% 〜 +14.9%`（中立・上昇キープゾーン）**: 強い上昇トレンドを維持しているが、新規買いには少し引きつけが足りない中間ゾーンです。
-              * 🎯 **`0.0% 〜 +7.0%`（青信号・好機シグナル）**: 25日移動平均線のすぐ上にあり、移動平均線を床（サポート）にして綺麗に反発する最も安全な買い場です。
-              * 🔄 **`マイナス（-）`（黄・調整シグナル）**: 株価が25日線の下に潜り込んでおり、再び25日線を上抜けて陽線をつけるまで待つべき調整局面です。
-            """)
-
-        # 時価総額
-        with st.expander("🏢 時価総額（億円）"):
-            st.markdown("""
-            > 💡 **要約**: 会社の身軽さと大化け余力（全範囲の完全判定早見表）
-
-            * **用語の意味**: `現在の株価 × 発行済み株式数` で計算され、「その会社を丸ごと全部買い占めるのに必要なお金」を表します。
-            * **数値の読み取り方（隙間なし完全判定）**:
-              * 👑 **`100億円 〜 200億円未満`（理想のサイズ）**: 身軽で数倍化（テンバガー）が最も狙いやすく、これから機関投資家が買い始めるゴールデンゾーンです。
-              * ✅ **`200億円 〜 300億円`（合格ライン）**: 小型成長株として十分身軽に値上がりできる上限サイズです。
-              * ⚪ **`300億円 〜 500億円`（中小型ゾーン）**: 安定感は増しますが、短期急騰の爆発力は徐々にマイルドになる中間サイズです。
-              * ❌ **`500億円超`（対象外）**: 大企業・中堅企業で急騰余力が小さいため、小型株集中投資の対象外です。
-            """)
-
-        # 単元株と1株取引
-        with st.expander("💰 単元株（100株）と 1株価格（単元未満株）"):
-            st.markdown("""
-            > 💡 **要約**: 資金に合わせた賢い買い方
-
-            * **用語の意味**:
-              * **単元株（100株）**: 通常の証券取引所で売買される基本セット（お菓子の箱買い）。
-              * **単元未満株（1株取引）**: 100株セットをバラして、1株単位で買える少額投資サービス（お菓子の1個バラ売り）。
-            * **数値の読み取り方**:
-              * **単元購入額 `10万円以下`**: 株価1,000円以下の銘柄なら、10万円の元手で100株丸ごと購入可能です。
-              * **単元購入額 `20万〜50万円`**: 100株だとまとまった資金が必要ですが、1株取引なら右側の **「1株価格（数百円〜数千円）」** から気軽に少額投資が始められます。
-            """)
-
-        # 創業者・役員保有比率（インサイダー比率）
-        with st.expander("👔 創業者・役員保有比率（%）"):
-            st.markdown("""
-            > 💡 **要約**: 経営陣の本気度と利害の一致
-
-            * **用語の意味**: 社長や取締役が、自社の株を何％自分で持っているかを表します。
-            * **数値の読み取り方**:
-              * 👑 **`20% 〜 70%`（理想的オーナー経営）**: 社長自身の資産と株価が直結しているため、「株価を何倍にも引き上げる熱量」がサラリーマン社長とは桁違いです。
-              * ❌ **`数% 以下`（警戒）**: 外部から送り込まれた雇われ社長が多く、短期的な保身に走りやすい傾向があります。
-            """)
-
-        # PER
-        with st.expander("⚖️ PER（株価収益率・倍）"):
-            st.markdown("""
-            > 💡 **要約**: 稼ぐ力に対する株価のお買い得度
-
-            * **用語の意味**: 会社の純利益に対して、株価が何倍まで買われているかを表します。「投資した資金を今の利益ペースで何年で回収できるか」の目安です。
-            * **数値の読み取り方**:
-              * 🟢 **`15倍 〜 40倍以下`（適正・安全圏）**: 成長性と価格のバランスが良く、割高すぎない水準です。
-              * 🟡 **`60倍 〜 100倍超`（超割高期待）**: 市場から将来の爆発的成長が織り込まれており、決算で少しでも期待を下回ると急落するリスクを伴います。
-            """)
-
-        # 財務健全性（実質無借金）
-        with st.expander("🛡️ 財務健全性（実質無借金）"):
-            st.markdown("""
-            > 💡 **要約**: 倒産リスクゼロの安心感
-
-            * **用語の意味**: 会社の手元にある「現金・預金」が、銀行からの「借金（有利子負債）」を上回っている状態です。
-            * **読み取り方**:
-              * **`実質無借金`**: 集中投資の最大の恐怖である「突然の倒産」が原理的に極めて起こりにくく、不況期でも事業投資を続けて生き残れる最強の財務体質です。
-            """)
-
-        # 四季報
-        with st.expander("📚 会社四季報（要約）"):
-            st.markdown("""
-            > 💡 **要約**: 全上場企業の通信簿
-
-            * **用語の意味**: 東洋経済新報社が年4回発行する、日本中の上場企業のビジネスモデル、財務、業績予想、社員年齢などが網羅された百科事典です。
-            * **読み取り方**: 本アプリの「特徴・サービス」欄には、四季報の重要要約が自動抽出されており、どんな商品で誰からお金をもらっているかが一目で掴めます。
-            """)
-
-    # 2. チャート・テクニカル用語の読み方
-    with st.container(border=True):
-        st.markdown("### 📈 チャート・テクニカル用語 ＆ 売買タイミングの読み取り方")
-        
-        with st.expander("📈 25日／75日移動平均線（MA）"):
-            st.markdown("""
-            > 💡 **要約**: 過去の平均買い値とトレンドの方向を示す命綱
-
-            * **25日移動平均線（緑・短期線）**:
-              * 過去25営業日（約1ヶ月）にその株を買った投資家の平均購入単価です。
-              * 株価が25日線の上を推移していれば「直近買った人たちが含み益で強気」の状態。株価が下がってきても、この線に触れて反発しやすい **「最強の押し目買いサポートライン（床）」** になります。
-            * **75日移動平均線（オレンジ・中期線）**:
-              * 過去75営業日（約3ヶ月・四半期決算1回分）の平均購入単価です。
-              * 会社の実力（業績成長）が本物かどうかを判定する中期トレンドの絶対防衛ラインとなります。
-            * **数値・サインの読み取り方**:
-              * 🟢 **`ゴールデンクロス（25日線が75日線を下から上抜け）`**: 短期の勢いが中期の平均を上回り、本格的な大化け上昇トレンドが開始した最高の買いシグナルです。
-              * ⚠️ **`25日線割れ`**: 一時的な調整局面。すぐに反発すれば絶好の押し目ですが、75日線まで調整が長引くリスクに警戒します。
-            """)
-
-        with st.expander("🕯️ ローソク足（赤と青・陽線と陰線）"):
-            st.markdown("""
-            > 💡 **要約**: 買い手と売り手の戦いの記録
-
-            * **赤色のローソク（陽線）**: スタート（始値）よりもゴール（終値）が高く終わった状態。買い手が勝った強い日です。
-            * **青色のローソク（陰線）**: スタートよりもゴールが安く終わった状態。売り手が勝った弱い日です。
-            * **ヒゲ（上下に伸びる細い線）**: その期間中に一時的につけた最高値（上ヒゲ）や最安値（下ヒゲ）を表します。長い下ヒゲが出ると「安値で強烈に買い支えられた反発シグナル」になります。
-            """)
-
-        with st.expander("🚀 パーフェクトオーダー ＆ 上昇トレンド"):
-            st.markdown("""
-            > 💡 **要約**: 最強の買い相場状態
-
-            * **状態**: 上から順に **`株価 ＞ 25日移動平均線（緑） ＞ 75日移動平均線（オレンジ）`** と並び、すべての線が右肩上がりの状態。
-            * **読み取り方**: 直近買った人も、数ヶ月前から持っている人も「全員が含み益」を出しており、売り急ぐ人がいないため株価が最も伸びやすい最強のトレンド状態です。
-            """)
-
-        with st.expander("🎯 押し目買い"):
-            st.markdown("""
-            > 💡 **要約**: 上昇途中のバーゲンセールを拾う技
-
-            * **意味**: ずっと上がり続ける株はなく、途中で必ず一時的な利益確定売りで少し下がる（調整する）波があります。この「一時的な調整安」を狙って買う手法です。
-            * **成功の目安**: 25日移動平均線に株価がタッチして、下ヒゲを出して反発した瞬間を拾うことで、高値掴みを防ぎながら安値で仕込めます。
-            """)
-
-        with st.expander("🧱 サポレジ（サポートラインとレジスタンスライン）"):
-            st.markdown("""
-            > 💡 **要約**: 価格の床と天井
-
-            * **レジスタンスライン（上値抵抗線・天井）**: 過去に高値をつけた価格水準。ここで買った人たちが「やれやれ、買値に戻ったから売ろう」と売り注文を出すため、株価が弾き返されやすい天井です。
-            * **サポートライン（下値支持線・床）**: 移動平均線や過去の安値水準。「ここまでは下がらないだろう」と買い注文が待ち構えている頑丈な床です。
-            * **立ち回り**: 天井の手前で買うのは危険（飛びつき厳禁）。床まで引きつけるか、天井を完全に突き破った後に買うのが鉄則です。
-            """)
-
-        with st.expander("🗼 イナゴタワー ＆ 全戻し"):
-            st.markdown("""
-            > 💡 **要約**: 仕手株・材料株の罠
-
-            * **意味**: SNSやネット掲示板で急に話題になり、短期トレーダー（イナゴ）が一斉に群がって垂直上昇（タワー形成）したあと、大口が売り抜けて全員が一斉に投げ売りし、元の株価まで急落すること。
-            * **見分け方**: 本業の売上成長（ファンダメンタルズ）の裏付けがなく、数日だけ急騰した株は危険。本アプリのスクリーナーは「売上+20%以上の本物の成長企業」に限定することで、この罠を事前に排除しています。
-            """)
-
-    # 3. イノベーター理論の売買フェーズ
-    with st.container(border=True):
-        st.markdown("### 💡 イノベーター理論 普及フェーズと売買タイミング")
-        st.markdown("""
-        遠藤洋氏の投資手法の真髄は、**『世間がその商品に気づき始めた瞬間に買い、誰もが知るブームになった瞬間に売る』** という人間心理の先回りです。
-        """)
-
-        with st.expander("🟢 アーリーアダプター期（買い時・初期採用者フェーズ）"):
-            st.success("""
-            * **普及率**: 2.5% 〜 16%
-            * **状態**: 流行に敏感な若者やアンテナの高い人たちが使い始め、テレビCMやYouTube広告、タクシー広告が始まったタイミング。
-            * **判断**: 世間一般の人はまだ「そんなの知らん」「怪しい」と慎重。**『まわりが慎重なら買い』** の法則が発動する絶好の仕込み場です。
-            """)
-
-        with st.expander("🔴 レイトマジョリティ期（売り時・過熱天井フェーズ）"):
-            st.warning("""
-            * **普及率**: 50% 〜 84%
-            * **状態**: テレビのワイドショーで特集され、普段投資をしない友人や親戚まで「あの株儲かるらしいよ」と口にし始めたタイミング。
-            * **判断**: これ以上新しい買い手が入ってこない天井圏。**『まわりが興味を持ったら売り』** の金言通り、利益を確定して立ち去る時です。
-            """)
-
-    # 4. 取引ルール ＆ 相場・注文の重要用語
-    with st.container(border=True):
-        st.markdown("### 🏛️ 取引ルール ＆ 相場・注文の重要用語")
-
-        with st.expander("🚀 ストップ高（S高） ＆ 🛑 ストップ安（S安）"):
-            st.markdown("""
-            > 💡 **要約**: 1日の価格変動ブレーキ（制限値幅）
-            
-            * **用語の意味**:
-              * 日本の株式市場（東証）では、パニックや過度な投機で株価が一瞬で0円になったり何倍にも暴走するのを防ぐため、前日の終値を基準に **「1日に動ける上下の限界幅（制限値幅）」** が定められています。
-              * その日の上限まで株価が上昇することを **「ストップ高（S高）」**、下限まで暴落することを **「ストップ安（S安）」** と呼びます。
-            * **取引の仕組み（比例配分）**:
-              * ストップ高で買い注文が売り注文を圧倒的に上回った場合、取引終了時に抽選で株を割り当てる「比例配分（ひれいはいぶん）」が行われます。
-            * **実践的な立ち回り・読み取り方**:
-              * 👑 **ストップ高の翌日**: 強い好決算や特大ニュースを背景にしたS高は、翌日もGU（ギャップアップ・高く始まる）する傾向があります。ただし、翌日の寄付き直後に「材料出尽くし」で大陰線を引くリスクもあるため、飛びつき買いは厳禁です。
-              * ⚠️ **ストップ安の警戒**: 悪材料で連続ストップ安になると、売りたいのに買い手がつかず何日も損切りできないリスクがあります。
-            """)
-
-        with st.expander("⚡ 成行（なりゆき）注文 ＆ 🎯 指値（さしね）注文"):
-            st.markdown("""
-            > 💡 **要約**: 「今すぐ買う」vs「値段を決めて待つ」
-            
-            * **成行（なりゆき）注文**:
-              * 価格を指定せず、「いくらでもいいから今すぐ買いたい（売りたい）」という注文です。最優先で即座に取引が成立します。
-              * ⚠️ **初心者の注意点**: 急騰している小型株を成行で買うと、想定外の超高値で約定してしまい、買った瞬間に大損（高値掴み）する危険があります。
-            * **指値（さしね）注文**:
-              * 「1,200円以下なら買う」「1,500円以上なら売る」と希望価格を指定する注文です。
-              * 🟢 **遠藤洋式の基本**: 感情に流されず、「自分が納得した適正価格まで引きつけて待つ」のが原則のため、買い注文は指値が基本です。
-            """)
-
-        with st.expander("🛡️ 逆指値（ぎゃくさしね・ストップロス）注文"):
-            st.markdown("""
-            > 💡 **要約**: 大損を絶対に防ぐ「自動ブレーキ装置」
-            
-            * **用語の意味**:
-              * 通常の指値とは逆に、「株価が○○円まで下がったら、自動で売却する（損切りする）」と事前に予約しておく注文です。
-            * **実践的な重要性**:
-              * 集中投資で最も大切なのは「1回の大暴落で資金を吹き飛ばさないこと」。
-              * どんな凄腕投資家でも予測を外すことはあります。買った瞬間に **「買値から -10%（または直近安値）」** に逆指値を入れておくことで、仕事中や夜間でも感情を挟まず自動で損失を限定できます。
-            """)
-
-        with st.expander("📊 出来高（できだか・売買高）"):
-            st.markdown("""
-            > 💡 **要約**: 相場のエネルギーと人気のバロメーター
-            
-            * **用語の意味**: その日やその週に、取引所で実際に売り買いされた「株の総数」です。
-            * **数値の読み取り方**:
-              * 🚀 **出来高急増 ＋ 株価上昇（本物の買い）**: 機関投資家や大口の本格的な資金が大量に流入している証拠。上昇トレンドが長続きしやすい最強のシグナルです。
-              * 💤 **出来高過疎（閑散相場）**: 誰からも見向きされていない状態。小型株では一度出来高が枯れると、売りたい時に売れなくなる流動性リスクがあります。
-            """)
-
-        with st.expander("💣 信用取引 ＆ 信用買い残（ざん）・シコリ玉"):
-            st.markdown("""
-            > 💡 **要約**: 借金トレードの残骸と将来の売り圧力
-            
-            * **用語の意味**:
-              * **信用取引**: 証券会社に担保を預け、自己資金の約3.3倍のレバレッジをかけて株を買う（または空売りする）手法。最長6ヶ月以内に必ず決済（反対売買）しなければなりません。
-              * **信用買い残**: 借金して買った投資家が、まだ決済せずに持っている株の残高です。
-            * **なぜ重要なのか（シコリ玉）**:
-              * 信用買い残が多い銘柄が下落すると、含み損を抱えた個人投資家が大量に捕まります。株価が少し上がると「やれやれ、買値に戻ったから損切り・返済しよう」と大量の売りが降ってくるため（シコリ玉）、上値が極めて重くなります。
-            """)
-
-        with st.expander("⚖️ 信用倍率（しんようばいりつ・倍）"):
-            st.markdown("""
-            > 💡 **要約**: 買い手と売り手の需給バランス
-            
-            * **計算式**: `信用買い残 ÷ 信用売り残`
-            * **数値の読み取り方**:
-              * 🟢 **`1倍 未満`（売り手優勢・好需給）**: 信用で売っている人（空売り）の方が多く、将来必ず買い戻さなければならないため、株価が上昇した際に「踏み上げ相場（空売りの買い戻しで爆発急騰）」が起きやすい好需給です。
-              * 🟡 **`1倍 〜 5倍`（標準水準）**: 需給バランスが取れた一般的な水準。
-              * 🔴 **`10倍 〜 数十倍超`（買い残過多・需給悪化）**: 借金で買った人が圧倒的に多く、将来の売り圧力が山積みになっている状態。業績が良くても株価が上がりにくいため、警戒が必要です。
-            """)
-
-    # 5. 投資指標 ＆ 企業アクション用語
-    with st.container(border=True):
-        st.markdown("### 🏢 投資指標 ＆ 企業アクションの重要用語")
-
-        with st.expander("🏢 PBR（株価純資産倍率・倍）"):
-            st.markdown("""
-            > 💡 **要約**: 会社の解散価値に対する割安度
-            
-            * **用語の意味**: 会社の純資産に対して、株価が何倍まで評価されているかを表します。
-            * **数値の読み取り方**:
-              * **`1倍`**: 「株価の合計（時価総額）」と「会社を今すぐ解散した時に株主に配れる現金価値」がちょうどイコール。理論上の底値目安。
-              * 🟢 **`1倍 割れ（0.5倍〜0.8倍）`**: 解散価値よりも安く放置されている状態（東証がPBR1倍割れ改善を強く要請中）。
-              * 🚀 **小型成長株（2倍〜5倍以上）**: 成長株は工場やビルなどの物的資産よりも「将来の稼ぐアイデアやITシステム」が価値の源泉のため、PBRが高くなるのが普通です。
-            """)
-
-        with st.expander("💡 ROE（自己資本利益率・%）"):
-            st.markdown("""
-            > 💡 **要約**: 株主のお金をどれだけ上手に増やしたか（経営効率）
-            
-            * **用語の意味**: 株主が出資したお金（自己資本）を使って、会社が1年間でどれだけ純利益を稼ぎ出したかのパーセンテージです。
-            * **数値の読み取り方**:
-              * 👑 **`15% 〜 20% 以上`（超優秀な高収益企業）**: 集めたお金を無駄に寝かせず、効率的に新規事業へ回して高利益を生み出す一流経営者の証拠。
-              * ⚠️ **`5% 未満`（低効率）**: お金を銀行に寝かせているだけで、株主の元手を有効活用できていない状態。
-            """)
-
-        with st.expander("🎁 配当利回り ＆ 自社株買い（株主還元）"):
-            st.markdown("""
-            > 💡 **要約**: 利益の分け前 vs 事業への全額再投資
-            
-            * **配当利回り**: 株価に対して、年間何％の配当金がもらえるかの利回り。
-            * **自社株買い**: 企業が自分のお金で市場の自社株を買い戻して消却し、1株の価値を直接引き上げる施策。
-            * **小型株集中投資の視点（小型成長株の本質）**:
-              * 初心者は「配当利回り4%」などの高配当株を好みますが、**「株価が2倍〜3倍になる小型成長株」を狙う場合、配当金は無配（0円）や低配当で十分**です。
-              * なぜなら、利益を配当として配ってしまうより、新規出店や開発費、広告CMに全額再投資して売上を何倍にも急拡大させてくれた方が、結果的に株価が何倍にもなって投資家の利益が圧倒的に大きくなるからです。
-            """)
-
-        with st.expander("✂️ 株式分割（かぶしきぶんかつ）"):
-            st.markdown("""
-            > 💡 **要約**: 株を小さく切り分けて買いやすくするお祭り
-            
-            * **用語の意味**: 例えば「1株を2株（または5株）に分割」すること。会社の価値（時価総額）は変わりませんが、1株あたりの株価が半分になり、株数が増えます。
-            * **株価への影響**:
-              * 100株買うのに100万円かかっていた株が、分割によって50万円で買えるようになるため、個人投資家の買いが殺到し、株価が急上昇する強い追い風材料（ポジティブイベント）になりやすいです。
-            """)
-
-        with st.expander("⚠️ 公募増資（PO） ＆ 第三者割当増資（株式の希薄化）"):
-            st.markdown("""
-            > 💡 **要約**: 新株を刷って資金集め（株主にとっての希薄化リスク）
-            
-            * **用語の意味**: 企業が新しく株を印刷・発行して、投資家や提携企業から数十億〜数百億円の資金を調達すること。
-            * **株価への影響（希薄化）**:
-              * ピザのサイズ（会社の価値）が同じまま、ピースの数だけ増やすようなものなので、**「1株あたりの利益や価値が薄まる（希薄化・ダイリューション）」** ため、発表直後は株価が急落しやすいリスクがあります。
-              * ※ただし、集めた資金で大型M&Aや爆発的成長を遂げる「前向きな増資」の場合は、後から株価が急回復することもあります。
-            """)
+bg_c1, bg_c2 = st.columns(2)
+with bg_c1:
+    if st.button("🔰 使い方 ＆ 安心マップ", use_container_width=True, help="アプリの使い方とデータ保護の仕組み"):
+        show_guide_dialog()
+    if st.button("📚 投資メソッド完全ガイド", use_container_width=True, help="遠藤洋氏の小型株集中投資ロジック解説"):
+        show_method_dialog()
+with bg_c2:
+    if st.button("📱 楽天iSPEED設定ヘルプ", use_container_width=True, help="楽天証券iSPEEDのスーパースクリーナー連携設定"):
+        show_ispeed_dialog()
+    if st.button("📖 用語と数値の見方ガイド", use_container_width=True, help="PER・PBR・営業利益などの数値の正しい見方"):
+        show_terms_dialog()
 
 # ==========================================
 # 公式免責事項 ＆ リファレンスフッター (コンプライアンス表記)

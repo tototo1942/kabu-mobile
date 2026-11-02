@@ -455,7 +455,7 @@ st.markdown("""
         box-sizing: border-box !important;
     }
 
-    /* 濃紺グラデーションのタブバー帯本体 */
+    /* 濃紺グラデーションのタブバー帯本体（PC: 1行表示） */
     div[data-testid="stTabs"] > div:first-child > div,
     div[data-testid="stTabs"] [role="tablist"],
     div[data-testid="stTabs"] [data-baseweb="tab-list"],
@@ -463,19 +463,13 @@ st.markdown("""
         background: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%) !important;
         display: flex !important;
         flex-wrap: nowrap !important;
-        overflow-x: scroll !important;
-        white-space: nowrap !important;
+        overflow-x: auto !important;
         overflow-y: hidden !important;
         gap: 8px !important;
         padding: 4px 8px !important;
         border: 1.5px solid #2563EB !important;
         border-radius: 10px !important;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
-        scrollbar-width: auto !important;
-        scrollbar-color: #38BDF8 #0B1329 !important;
-        touch-action: pan-x !important;
-        overscroll-behavior-x: contain !important;
-        -webkit-overflow-scrolling: touch !important;
         max-width: 1200px !important;
         margin: 0 auto !important;
     }
@@ -483,38 +477,51 @@ st.markdown("""
     /* タブメニュー固定に伴うコンテンツ上部余白の確保 */
     div[data-testid="stTabs"] > div:last-child,
     div[data-testid="stTabContent"] {
-        margin-top: 66px !important;
+        margin-top: 56px !important;
     }
     div.block-container {
         padding-top: 10px !important;
     }
+
+    /* ==========================================
+       スマホ画面最適化：2段自動折り返しで全メニューを100%常時可視化！
+       ========================================== */
     @media (max-width: 768px) {
+        /* スマホ上部固定コンテナのパディング調整 */
+        div[data-testid="stTabs"] > div:first-child {
+            padding: 6px 8px 6px 50px !important;
+        }
+        /* タブリスト：2段折り返し（見切れゼロ・スワイプ不要） */
+        div[data-testid="stTabs"] > div:first-child > div,
+        div[data-testid="stTabs"] [role="tablist"],
+        div[data-testid="stTabs"] [data-baseweb="tab-list"],
+        div[data-baseweb="tab-list"] {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            overflow: visible !important;
+            gap: 4px 5px !important;
+            padding: 4px 6px !important;
+            justify-content: flex-start !important;
+        }
+        /* 各タブボタン：スマホで全項目が綺麗に2段（または3段）で収まる最適サイズ */
+        div[data-testid="stTabs"] button[data-baseweb="tab"],
+        div[data-testid="stTabs"] [role="tab"],
+        div[data-testid="stTabs"] > div:first-child button {
+            flex: 0 0 auto !important;
+            font-size: 0.78rem !important;
+            padding: 5px 8px !important;
+            white-space: nowrap !important;
+            margin: 1px 0 !important;
+            border-radius: 6px !important;
+        }
+        /* 2段タブメニューに伴うコンテンツ押し下げ余白（裏に被らない高さ確保） */
         div[data-testid="stTabs"] > div:last-child,
         div[data-testid="stTabContent"] {
-            margin-top: 60px !important;
+            margin-top: 88px !important;
         }
         div.block-container {
-            padding-top: 6px !important;
+            padding-top: 4px !important;
         }
-    }
-    /* 指で掴める高視認性太型スクロールバー（高さ10px） */
-    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar,
-    div[data-baseweb="tab-list"]::-webkit-scrollbar {
-        height: 10px !important;
-        display: block !important;
-    }
-    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-track,
-    div[data-baseweb="tab-list"]::-webkit-scrollbar-track {
-        background: #0B1329 !important;
-        border-radius: 8px !important;
-        margin: 0 8px !important;
-    }
-    div[data-testid="stTabs"] [role="tablist"]::-webkit-scrollbar-thumb,
-    div[data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
-        background: linear-gradient(90deg, #38BDF8 0%, #2563EB 100%) !important;
-        border-radius: 8px !important;
-        border: 2px solid #FFFFFF !important;
-        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
     }
 
     /* 端の白い謎アイコン（スクロールボタン）を徹底消去 */

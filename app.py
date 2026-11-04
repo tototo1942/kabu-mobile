@@ -1126,10 +1126,10 @@ def analyze_entry_timing(code: str, high_drop_val=None):
         if (consecutive_drops and five_day_drop <= -5.0) or (five_day_drop <= -9.0):
             is_falling_sharply = True
 
-    # 判定ロジック（優先度順）
+    # 判定ロジック（優先度順・一覧テーブルと完全統一）
     if is_falling_sharply:
         return {
-            "status": "🔴 ⚠️ 落ちるナイフ（急落警戒・手出し無用）",
+            "status": "🔴 ⚠️ 落ちるナイフ / 下降中",
             "badge_color": "#DC2626",
             "bg_color": "#FEF2F2",
             "border_color": "#F87171",
@@ -1142,7 +1142,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     elif (high_dist is not None and high_dist <= 3.0) or (ma25_bias is not None and ma25_bias >= 15.0):
         reason = "直近高値（レジスタンス）直前" if (high_dist is not None and high_dist <= 3.0) else f"25日線から乖離過熱 (+{ma25_bias}%)"
         return {
-            "status": "🟡 ⏳ 押し目待ち（過熱・高値警戒）",
+            "status": "🟡 ⏳ 押し目待ち（過熱・高値圏）",
             "badge_color": "#D97706",
             "bg_color": "#FFFBEB",
             "border_color": "#FCD34D",
@@ -1154,7 +1154,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     
     elif high_dist is not None and high_dist <= 0.5 and (ma25_bias is not None and ma25_bias < 15.0):
         return {
-            "status": "🔵 🚀 高値ブレイク（青天井・順張り圏）",
+            "status": "🔵 🚀 高値ブレイク（上昇圏）",
             "badge_color": "#2563EB",
             "bg_color": "#EFF6FF",
             "border_color": "#93C5FD",
@@ -1166,26 +1166,26 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     
     elif (sma25 and latest_close >= sma25) and (ma25_bias is not None and 0.0 <= ma25_bias <= 7.0) and (high_dist is not None and high_dist >= 6.0):
         return {
-            "status": "🟢 🎯 押し目買い好機（健全調整・絶好水準）",
+            "status": "🟢 🎯 押し目買い好機（25日線上）",
             "badge_color": "#16A34A",
             "bg_color": "#F0FDF4",
             "border_color": "#86EFAC",
             "ma25_bias": ma25_bias,
             "high_dist": high_dist,
-            "action": "🎯 買いエントリー推奨・リスクリワード最良",
+            "action": "🎯 買いエントリー推奨・絶好水準",
             "advice": "上昇トレンドを綺麗に維持しつつ、25日移動平均線付近まで健全な調整（押し目）が完了した絶好のタイミングです。FXで言う『サポレジ転換での押し目買い』にあたり、下値リスク（損切り幅）が極めて小さく、大きなリターンが狙える局面です。"
         }
     
     else:
         return {
-            "status": "⚪ 🔄 様子見 / 調整進行中",
+            "status": "⚪ ⏳ 深押し（25日線越え待ち）",
             "badge_color": "#475569",
             "bg_color": "#F8FAFC",
             "border_color": "#CBD5E1",
             "ma25_bias": ma25_bias,
             "high_dist": high_dist,
-            "action": "👀 監視継続・シグナル待ち",
-            "advice": "保ち合い（レンジ）で方向感を模索しているか、25日線を下回って調整が進行中です。明確な反発の陽線が出るか、トレンド転換シグナルが点灯するまで監視を継続してください。"
+            "action": "👀 25日線越え（上抜け）を確認するまで待機",
+            "advice": "25日移動平均線を割り込んで深く押しています（または方向感を模索中）。安易に逆張り買いせず、反発して25日線を再び越えてくる（上抜ける）まで手を出さず監視を継続してください。"
         }
 
 
@@ -4028,31 +4028,34 @@ with tab1:
 
         df["仕分け"] = df["コード"].astype(str).map(get_status_badge)
 
-        # FX目線での統合売買・エントリー判定列を付与（重複するチャートトレンドを吸収統合）
+        # FX目線での統合売買・エントリー判定列を付与（詳細画面と完全統一）
         def get_quick_entry_signal(row):
             high_drop = row.get("高値下落率(%)", None)
             trend = str(row.get("チャートトレンド", ""))
             
             # 1. 下降トレンド判定
             if "下降トレンド" in trend:
-                return "🔴 ⚠️ 下降 / 調整中"
+                return "🔴 ⚠️ 落ちるナイフ / 下降中"
             
             # 2. 高値下落率がある場合の精密分類
             if pd.notna(high_drop):
                 h_val = float(high_drop)
-                if h_val <= 3.5:
-                    return "🟡 ⏳ 高値警戒(待ち)"
+                if h_val <= 3.0:
+                    return "🟡 ⏳ 押し目待ち（過熱・高値圏）"
+                elif 3.0 < h_val <= 6.0:
+                    return "🔵 🚀 高値ブレイク（上昇圏）"
+                elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
+                    # 健全な浅い押し目かつ上昇トレンド
+                    return "🟢 🎯 押し目買い好機（25日線上）"
+                elif 18.0 < h_val < 35.0:
+                    # 3996などの深押し（20%〜30%下落）は25日線を割っているため深押し判定
+                    return "⚪ ⏳ 深押し（25日線越え待ち）"
                 elif h_val >= 35.0:
-                    # 高値から大幅暴落後の戻り局面（シンカ等。シコリ玉注意）
-                    return "🟣 🔄 リバウンド途上(警戒)"
-                elif 7.0 <= h_val <= 30.0:
-                    return "🟢 🎯 押し目買い好機"
-                elif 3.5 < h_val < 7.0:
-                    return "🔵 ⚡ 上昇中(高値接近)"
+                    return "🟣 🔄 リバウンド途上（警戒）"
             
             if "上昇トレンド" in trend:
-                return "🟢 🎯 押し目買い好機"
-            return "⚪ 🔄 保ち合い / レンジ"
+                return "🟢 🎯 押し目買い好機（25日線上）"
+            return "⚪ ⏳ 深押し（25日線越え待ち）"
 
         df["エントリー判定"] = df.apply(get_quick_entry_signal, axis=1)
 
@@ -4115,20 +4118,22 @@ with tab1:
 
         st.session_state.smart_view_selection = selected_smart_view
 
-        # エントリー判定の優先順位スコア関数（押し目好機を先頭、上昇中、高値警戒、調整中の順）
+        # エントリー判定の優先順位スコア関数（好機先頭、高値ブレイク、高値圏、深押し、下降の順）
         def calc_entry_score(val):
             s = str(val)
             if "押し目買い好機" in s:
                 return 1
-            if "上昇中" in s:
+            if "高値ブレイク" in s:
                 return 2
-            if "高値警戒" in s:
+            if "押し目待ち" in s:
                 return 3
-            if "リバウンド途上" in s:
+            if "深押し" in s:
                 return 4
-            if "下降" in s:
+            if "リバウンド" in s:
                 return 5
-            return 6
+            if "落ちるナイフ" in s or "下降" in s:
+                return 6
+            return 7
 
         # スマートビューに基づく絞り込みと最適ソート
         if "【トレンド】" in selected_smart_view:

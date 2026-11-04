@@ -2884,6 +2884,11 @@ def render_stock_deep_dive(idx, tab1_df):
         high_drop_val = stock_data.get('高値下落率(%)', None)
         timing_info = analyze_entry_timing(stock_code, high_drop_val)
         
+        # リアルタイム診断結果を一覧テーブル側へも即時キャッシュ同期
+        if "stock_entry_cache" not in st.session_state:
+            st.session_state.stock_entry_cache = {}
+        st.session_state.stock_entry_cache[str(stock_code).strip()] = timing_info["status"]
+        
         st.markdown(f"""
         <div style="background-color: {timing_info['bg_color']}; border: 2px solid {timing_info['border_color']}; border-radius: 10px; padding: 14px 18px; margin-top: 12px; margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
@@ -4030,6 +4035,10 @@ with tab1:
 
         # FX目線での統合売買・エントリー判定列を付与（詳細画面と完全統一）
         def get_quick_entry_signal(row):
+            c_str = str(row.get("コード", "")).strip()
+            # 詳細画面でリアルタイム診断済みの場合は最優先で同期
+            if "stock_entry_cache" in st.session_state and c_str in st.session_state.stock_entry_cache:
+                return st.session_state.stock_entry_cache[c_str]
             high_drop = row.get("高値下落率(%)", None)
             trend = str(row.get("チャートトレンド", ""))
             

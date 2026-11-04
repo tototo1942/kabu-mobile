@@ -1,0 +1,48 @@
+name: 📈 毎営業日・自動スクリーニング更新 (Daily Stock Screening)
+
+on:
+  schedule:
+    # 毎営業日（月〜金）の東証大引け後（日本時間 17:30 = UTC 08:30）に自動実行
+    - cron: '30 8 * * 1-5'
+  # GitHubのWeb画面から手動でいつでもワンクリック実行可能
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  screening:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: 📥 リポジトリをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 3.11 をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 依存パッケージをインストール
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 🚀 スクリーニングスクリプトを実行 (screener.py)
+        run: |
+          python screener.py
+
+      - name: 💾 最新の growth_stocks.csv をGitHubへコミット＆プッシュ
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add growth_stocks.csv
+          if git diff --staged --quiet; then
+            echo "変更なし：最新データに更新済みです"
+          else
+            git commit -m "🤖 自動更新：最新成長株スクリーニングデータ ($(date +'%Y-%m-%d %H:%M')) [skip ci]"
+            git push origin main
+            echo "最新の growth_stocks.csv をプッシュしました！"
+          fi

@@ -19,7 +19,18 @@ import json
 import subprocess
 import urllib.parse
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# 日本標準時 (JST = UTC+9) の定義（海外クラウドサーバー稼働時の時刻ズレを完全解消）
+JST = timezone(timedelta(hours=9))
+
+def now_jst():
+    """日本標準時 (JST) の現在日時を取得"""
+    return datetime.now(JST)
+
+def from_timestamp_jst(ts):
+    """UNIXタイムスタンプを日本標準時 (JST) の日時に変換"""
+    return datetime.fromtimestamp(ts, tz=timezone.utc).astimezone(JST)
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -1563,7 +1574,7 @@ def parse_earnings_alert(raw_date_str):
         return "⚪ 未定 / 開示待ち", "unknown", None
     
     s = str(raw_date_str).strip()
-    today = datetime.now().date()
+    today = now_jst().date()
     
     # 日付パースの試行
     target_date = None
@@ -1609,13 +1620,13 @@ def get_data_timestamps():
     csv_dt_str = "-"
     if os.path.exists(CSV_FILE):
         mtime = os.path.getmtime(CSV_FILE)
-        csv_dt_str = datetime.fromtimestamp(mtime).strftime("%Y/%m/%d %H:%M")
+        csv_dt_str = from_timestamp_jst(mtime).strftime("%Y/%m/%d %H:%M")
     
     # 決算日ファイルのタイムスタンプ
     earnings_dt_str = "-"
     if os.path.exists(EARNINGS_FILE):
         mtime = os.path.getmtime(EARNINGS_FILE)
-        earnings_dt_str = datetime.fromtimestamp(mtime).strftime("%Y/%m/%d %H:%M")
+        earnings_dt_str = from_timestamp_jst(mtime).strftime("%Y/%m/%d %H:%M")
     elif csv_dt_str != "-":
         earnings_dt_str = csv_dt_str
         
@@ -1630,7 +1641,7 @@ def get_data_timestamps():
             except Exception:
                 pass
         if not price_dt_str:
-            price_dt_str = datetime.now().strftime("%Y/%m/%d %H:%M")
+            price_dt_str = now_jst().strftime("%Y/%m/%d %H:%M")
             st.session_state["last_price_sync_time"] = price_dt_str
 
     return {
@@ -1641,7 +1652,7 @@ def get_data_timestamps():
 
 def save_price_sync_timestamp():
     """株価更新時刻を保存"""
-    now_str = datetime.now().strftime("%Y/%m/%d %H:%M")
+    now_str = now_jst().strftime("%Y/%m/%d %H:%M")
     st.session_state["last_price_sync_time"] = now_str
     try:
         with open(DATA_TIMESTAMPS_FILE, "w", encoding="utf-8") as f:
@@ -1826,8 +1837,8 @@ def get_csv_freshness_info():
     if not os.path.exists(CSV_FILE):
         return None, True, 999
     mtime = os.path.getmtime(CSV_FILE)
-    dt = datetime.fromtimestamp(mtime)
-    days_ago = (datetime.now() - dt).days
+    dt = from_timestamp_jst(mtime)
+    days_ago = (now_jst().date() - dt.date()).days
     is_outdated = days_ago >= 30
     date_str = dt.strftime("%Y/%m/%d")
     return date_str, is_outdated, days_ago

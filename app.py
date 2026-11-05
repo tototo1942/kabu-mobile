@@ -1,4 +1,4 @@
-﻿# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 遠藤洋式 小型株集中投資 Webダッシュボード (app.py)
 著書『10万円から始める！ 小型株集中投資で1億円』の全メソッドを完全実装した高視認性Webアプリ。
@@ -43,6 +43,8 @@ SETTINGS_FILE = os.path.join(BASE_DIR, "search_conditions.json")
 STATUS_FILE = os.path.join(BASE_DIR, "stock_status.json")
 WATCHLIST_FILE = os.path.join(BASE_DIR, "watchlist.json")
 NOTES_FILE = os.path.join(BASE_DIR, "stock_notes.json")
+EARNINGS_FILE = os.path.join(BASE_DIR, "earnings_dates.json")
+DATA_TIMESTAMPS_FILE = os.path.join(BASE_DIR, "data_timestamps.json")
 APP_ICON_FILE = os.path.join(BASE_DIR, "apple-touch-icon.png")
 
 # ページ基本設定（スマホ画面向けに初期サイドバーを折りたたみに設定）
@@ -1538,6 +1540,116 @@ def fetch_kabutan_theme_stocks(theme_str):
     return stocks, keyword
 
 
+# ==========================================
+# 決算発表日 ＆ データ更新タイムスタンプ管理関数
+# ==========================================
+def load_earnings_dates():
+    """決算発表日マスター（earnings_dates.json）を読み込む"""
+    if os.path.exists(EARNINGS_FILE):
+        try:
+            with open(EARNINGS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def parse_earnings_alert(raw_date_str):
+    """
+    決算日文字列から、表示テキストと警戒レベルを判定
+    返り値: (alert_text, badge_level, days_left)
+    badge_level: 'danger' (7日以内), 'warning' (14日以内), 'normal' (15日以上), 'past' (発表直後), 'unknown' (未定)
+    """
+    if not raw_date_str or pd.isna(raw_date_str) or str(raw_date_str).strip() in ["-", "", "不明", "nan"]:
+        return "⚪ 未定 / 開示待ち", "unknown", None
+    
+    s = str(raw_date_str).strip()
+    today = datetime.now().date()
+    
+    # 日付パースの試行
+    target_date = None
+    for fmt in ["%Y/%m/%d", "%Y-%m-%d", "%Y年%m月%d日"]:
+        try:
+            target_date = datetime.strptime(s[:10], fmt).date()
+            break
+        except Exception:
+            pass
+            
+    # "11月14日" のような年のない表記の場合
+    if target_date is None:
+        m = re.search(r"(\d{1,2})月(\d{1,2})日", s)
+        if m:
+            try:
+                target_date = datetime(today.year, int(m.group(1)), int(m.group(2))).date()
+            except Exception:
+                pass
+                
+    if target_date is None:
+        return f"📅 {s}", "normal", None
+        
+    days_diff = (target_date - today).days
+    short_date = target_date.strftime("%m/%d")
+    
+    if 0 <= days_diff <= 7:
+        if days_diff == 0:
+            return f"🚨 【本日決算】{short_date}", "danger", 0
+        return f"🚨 【超警戒】{short_date} (あと{days_diff}日)", "danger", days_diff
+    elif 8 <= days_diff <= 14:
+        return f"⚠️ 【警戒】{short_date} (あと{days_diff}日)", "warning", days_diff
+    elif days_diff > 14:
+        return f"📅 {short_date} (あと{days_diff}日)", "normal", days_diff
+    elif -7 <= days_diff < 0:
+        return f"🟢 {short_date} (発表直後)", "past", days_diff
+    else:
+        # 過去の決算日（次回待ち）
+        return "⚪ 未定 / 開示待ち", "unknown", None
+
+def get_data_timestamps():
+    """各データ（株価、決算日、銘柄リストCSV）の最終更新日時（YYYY/MM/DD HH:MM）を取得"""
+    # 銘柄リストCSVのタイムスタンプ
+    csv_dt_str = "-"
+    if os.path.exists(CSV_FILE):
+        mtime = os.path.getmtime(CSV_FILE)
+        csv_dt_str = datetime.fromtimestamp(mtime).strftime("%Y/%m/%d %H:%M")
+    
+    # 決算日ファイルのタイムスタンプ
+    earnings_dt_str = "-"
+    if os.path.exists(EARNINGS_FILE):
+        mtime = os.path.getmtime(EARNINGS_FILE)
+        earnings_dt_str = datetime.fromtimestamp(mtime).strftime("%Y/%m/%d %H:%M")
+    elif csv_dt_str != "-":
+        earnings_dt_str = csv_dt_str
+        
+    # 最新株価取得日時（セッションステートまたはタイムスタンプJSON）
+    price_dt_str = st.session_state.get("last_price_sync_time")
+    if not price_dt_str:
+        if os.path.exists(DATA_TIMESTAMPS_FILE):
+            try:
+                with open(DATA_TIMESTAMPS_FILE, "r", encoding="utf-8") as f:
+                    ts_data = json.load(f)
+                    price_dt_str = ts_data.get("price_sync_time")
+            except Exception:
+                pass
+        if not price_dt_str:
+            price_dt_str = datetime.now().strftime("%Y/%m/%d %H:%M")
+            st.session_state["last_price_sync_time"] = price_dt_str
+
+    return {
+        "price": price_dt_str,
+        "earnings": earnings_dt_str,
+        "csv": csv_dt_str
+    }
+
+def save_price_sync_timestamp():
+    """株価更新時刻を保存"""
+    now_str = datetime.now().strftime("%Y/%m/%d %H:%M")
+    st.session_state["last_price_sync_time"] = now_str
+    try:
+        with open(DATA_TIMESTAMPS_FILE, "w", encoding="utf-8") as f:
+            json.dump({"price_sync_time": now_str}, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+
 def fetch_theme_major_stocks(selected_genres):
     """
     上級者モードで選択されたテーマに基づき、株探公式テーマ全銘柄（または代表銘柄）をオンデマンド取得・キャッシュ
@@ -1697,6 +1809,10 @@ def fetch_theme_major_stocks(selected_genres):
         res_df["株探IR"] = "https://kabutan.jp/stock/finance?code=" + res_df["コード"].astype(str)
         res_df["X口コミ"] = "https://search.yahoo.co.jp/realtime/search?p=" + res_df["銘柄名"].astype(str)
         res_df["ジャンルリスト"] = res_df.apply(get_stock_genres, axis=1)
+        # 決算発表日データの付与
+        e_dict = load_earnings_dates()
+        res_df["決算予定日_生値"] = res_df["コード"].astype(str).map(lambda c: e_dict.get(str(c), "-"))
+        res_df["直近決算日"] = res_df["決算予定日_生値"].map(lambda d: parse_earnings_alert(d)[0])
         return res_df
         
     return pd.DataFrame()
@@ -1748,6 +1864,10 @@ def load_data():
 
         # 投資テーマ・ジャンルリストを自動生成
         df["ジャンルリスト"] = df.apply(get_stock_genres, axis=1)
+        # 決算発表日データの付与（earnings_dates.json または CSV から取得）
+        e_dict = load_earnings_dates()
+        df["決算予定日_生値"] = df["コード"].astype(str).map(lambda c: e_dict.get(str(c), df.get("直近決算日", "-") if "直近決算日" in df.columns else "-"))
+        df["直近決算日"] = df["決算予定日_生値"].map(lambda d: parse_earnings_alert(d)[0])
 
         # 起動毎に、全銘柄の「最新終値（株価）」を一括高速ダウンロード（所要時間1〜2秒）
         try:
@@ -1763,6 +1883,7 @@ def load_data():
                 if price_map:
                     df["株価(円)"] = df["コード"].astype(str).map(price_map).fillna(df.get("株価(円)", 0))
                     df["単元購入額(万円)"] = (df["株価(円)"] * 100 / 10000).round(1)
+                    save_price_sync_timestamp()
         except Exception:
             pass
         
@@ -2602,35 +2723,35 @@ st.session_state.keyword_input = str(keyword)
 save_current_conditions()
 
 # ==========================================
-# サイドバー最下部：データ鮮度表示 ＆ 手動更新ボタン
+# ==========================================
+# サイドバー最下部：全データ更新日時 ＆ 更新ボタン
+# ==========================================
 # ==========================================
 st.sidebar.markdown("---")
+st.sidebar.markdown("#### 🕒 データ更新日時")
+ts_sb = get_data_timestamps()
 date_str, is_outdated, days_ago = get_csv_freshness_info()
 
-if date_str:
-    if is_outdated:
-        # 1ヶ月以上経過時：赤背景・白文字の目立つ未更新バッジ
-        badge_html = f"""
-        <div style="font-size: 0.88rem; color: #1E293B; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-            <span>📅 データ: <b>{date_str}</b></span>
-            <span style="background-color: #EF4444; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.5px;">未更新</span>
-        </div>
-        """
-        st.sidebar.markdown(badge_html, unsafe_allow_html=True)
-        btn_label = "🔄 候補銘柄の増減・最新化"
-        btn_help = f"データが{days_ago}日前（1ヶ月以上前）のものです。新しいIPO銘柄の追加や時価総額300億円超での卒業など、候補銘柄の顔ぶれを再スクリーニングします（約40秒）"
-    else:
-        # 通常時：シンプル表示
-        normal_html = f"""
-        <div style="font-size: 0.88rem; color: #334155; margin-bottom: 8px;">
-            📅 データ: <b>{date_str}</b> <span style="font-size: 0.75rem; color: #64748B;">({days_ago}日前)</span>
-        </div>
-        """
-        st.sidebar.markdown(normal_html, unsafe_allow_html=True)
-        btn_label = "🔄 候補銘柄の増減・最新化"
-        btn_help = "新しいIPO銘柄の追加や時価総額300億円超での卒業など、候補銘柄の顔ぶれを再スクリーニングして更新します（約40秒）"
+outdated_badge = '<span style="background-color: #EF4444; color: #FFFFFF; font-size: 0.70rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; margin-left: 4px;">未更新</span>' if is_outdated else ''
 
-    if st.sidebar.button(btn_label, use_container_width=True, help=btn_help, key="sb_btn_refresh_csv"):
+st.sidebar.markdown(f"""
+<div style="background-color: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 8px 10px; margin-bottom: 10px; font-size: 0.82rem; line-height: 1.6; color: #334155;">
+    <div>📈 <strong>最新株価</strong>: <span style="color: #0F172A; font-weight: 600;">{ts_sb['price']}</span></div>
+    <div>📅 <strong>決算予定日</strong>: <span style="color: #0F172A; font-weight: 600;">{ts_sb['earnings']}</span></div>
+    <div>📋 <strong>銘柄リスト</strong>: <span style="color: #0F172A; font-weight: 600;">{ts_sb['csv']}</span>{outdated_badge}</div>
+</div>
+""", unsafe_allow_html=True)
+
+if st.sidebar.button("🔄 株価・決算を再取得", use_container_width=True, help="最新の株価終値および決算発表日データを即時再ダウンロードして画面を最新化します", key="sb_btn_refresh_price_mob_main"):
+    st.cache_data.clear()
+    save_price_sync_timestamp()
+    st.toast("✨ 最新の株価・決算データを再取得しました！", icon="🎉")
+    st.rerun()
+
+btn_label = "🔄 候補銘柄の増減・最新化"
+btn_help = f"データが{days_ago}日前（1ヶ月以上前）のものです。新しいIPO銘柄の追加や時価総額300億円超での卒業など、候補銘柄の顔ぶれを再スクリーニングします（約40秒）" if is_outdated else "新しいIPO銘柄の追加や時価総額300億円超での卒業など、候補銘柄の顔ぶれを再スクリーニングして更新します（約40秒）"
+
+if st.sidebar.button(btn_label, use_container_width=True, help=btn_help, key="sb_btn_refresh_csv"):
         with st.spinner("最新データを取得中...（約40秒）"):
             screener_script = os.path.join(BASE_DIR, "screener.py")
             res = subprocess.run([sys.executable, screener_script], capture_output=True, text=True)
@@ -2912,6 +3033,67 @@ def render_stock_deep_dive(idx, tab1_df):
         # 特徴・サービス
         st.success(f"**【特徴・主力サービス (四季報要約)】**: {stock_data.get('特徴・サービス', '情報なし')}")
         
+        # 直近決算日 ＆ 警戒メーター
+        raw_earnings = stock_data.get("決算予定日_生値", stock_data.get("直近決算日", None))
+        alert_label, alert_level, days_left = parse_earnings_alert(raw_earnings)
+
+        if alert_level == "danger":
+            st.markdown(f"""
+            <div style="background-color: #FEF2F2; border: 2px solid #DC2626; border-radius: 10px; padding: 12px 16px; margin: 10px 0 14px 0; box-shadow: 0 2px 4px rgba(220,38,38,0.1);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-weight: 800; color: #DC2626; font-size: 1.05rem;">
+                        🚨 【超警戒】直近決算発表予定日: {raw_earnings if raw_earnings else '近日'}（あと {days_left} 日）
+                    </span>
+                    <span style="background-color: #DC2626; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                        決算跨ぎ厳重警戒
+                    </span>
+                </div>
+                <div style="font-size: 0.88rem; color: #991B1B; margin-top: 6px; line-height: 1.4;">
+                    ⚠️ <strong>決算発表が目前に迫っています。</strong>決算発表直前のエントリーは急落（決算ギャンブル崩壊）リスクが極めて高いため、発表通過および市場の好感・出尽くし反応を確認するまで新規買いは原則見送りを推奨します。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        elif alert_level == "warning":
+            st.markdown(f"""
+            <div style="background-color: #FFFBEB; border: 2px solid #D97706; border-radius: 10px; padding: 12px 16px; margin: 10px 0 14px 0; box-shadow: 0 2px 4px rgba(217,119,6,0.1);">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <span style="font-weight: 800; color: #D97706; font-size: 1.02rem;">
+                        ⚠️ 【警戒】直近決算発表予定日: {raw_earnings if raw_earnings else '近日'}（あと {days_left} 日）
+                    </span>
+                    <span style="background-color: #D97706; color: white; padding: 2px 10px; border-radius: 20px; font-weight: 700; font-size: 0.8rem;">
+                        2週間前警戒ゾーン
+                    </span>
+                </div>
+                <div style="font-size: 0.88rem; color: #92400E; margin-top: 6px; line-height: 1.4;">
+                    決算発表まで2週間以内です。事前修正発表や機関投資家の手仕舞い売りに伴う株価変動にご注意ください。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+        elif alert_level == "past":
+            st.markdown(f"""
+            <div style="background-color: #F0FDF4; border: 1.5px solid #16A34A; border-radius: 8px; padding: 10px 14px; margin: 10px 0 14px 0;">
+                <span style="font-weight: 700; color: #166534; font-size: 0.95rem;">
+                    🟢 直近決算（{raw_earnings}）発表直後 ｜ 決算通過済み。下の「📑 決算・IR業績」から進捗をご確認ください
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+        elif alert_level == "normal":
+            st.markdown(f"""
+            <div style="background-color: #EFF6FF; border: 1.5px solid #93C5FD; border-radius: 8px; padding: 10px 14px; margin: 10px 0 14px 0;">
+                <span style="font-weight: 700; color: #1E40AF; font-size: 0.95rem;">
+                    📅 直近決算発表予定日: {raw_earnings}（あと {days_left} 日） ｜ 当面の決算急変動リスクは低めです
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown(f"""
+            <div style="background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 10px 14px; margin: 10px 0 14px 0;">
+                <span style="font-weight: 600; color: #475569; font-size: 0.92rem;">
+                    📅 直近決算発表予定日: 次回日程開示待ち ｜ 詳細は下の「📑 決算・IR業績 (株探)」をご確認ください
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+        
         # 💰 購入資金（株価 vs 単元株）
         cur_price = stock_data.get('株価(円)', None)
         unit_val = stock_data.get('単元購入額(万円)', None)
@@ -3005,6 +3187,7 @@ def render_stock_deep_dive(idx, tab1_df):
 ・チャートトレンド状態: {stock_data.get('チャートトレンド', '不明')}
 ・52週高値からの下落率: {stock_data.get('高値下落率(%)', 0)} %
 ・特徴・主要サービス: {stock_data.get('特徴・サービス', '不明')}
+・直近決算発表予定日: {raw_earnings if raw_earnings else '未定'} ({alert_label})
 
 ---
 
@@ -3996,6 +4179,25 @@ with tab1:
         </div>
     </div>
     """, unsafe_allow_html=True)
+    # --- 🕒 全データ更新状況ステータスバー（何月何日 何時何分）---
+    ts_info = get_data_timestamps()
+    ts_col_info, ts_col_btn = st.columns([4.0, 2.0])
+    with ts_col_info:
+        st.markdown(f"""
+        <div style="background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 6px 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: flex-start; gap: 12px; flex-wrap: wrap; font-size: 0.82rem; color: #334155;">
+            <span style="font-weight: 800; color: #1E3A8A;">🕒 データ更新:</span>
+            <span>📈 株価: <strong style="color: #0F172A;">{ts_info['price']}</strong></span>
+            <span>📅 決算日: <strong style="color: #0F172A;">{ts_info['earnings']}</strong></span>
+            <span>📋 リスト: <strong style="color: #0F172A;">{ts_info['csv']}</strong></span>
+        </div>
+        """, unsafe_allow_html=True)
+    with ts_col_btn:
+        if st.button("🔄 株価・決算を再取得", use_container_width=True, help="最新の株価終値および決算発表日データを即時再ダウンロードして画面を最新化します", key="top_mob_refresh_price"):
+            st.cache_data.clear()
+            save_price_sync_timestamp()
+            st.toast("✨ 最新の株価・決算データを再取得しました！", icon="🎉")
+            st.rerun()
+
     # 投資条件と該当社数は左上の青い「＞」ボタン（サイドバー）内に完全移設
     # ==========================================
     # 🎯 メイン操作バー：投資条件フィルター (案Bポップアップ) ＆ 銘柄データ更新
@@ -4178,7 +4380,7 @@ with tab1:
 
         # 一覧テーブルの列構成（注目順に再構成：銘柄名の隣に株価・単元株・特徴、データ詳細は後ろへ、不要列を削減）
         display_cols = [
-            "仕分け", "エントリー判定", "コード", "銘柄名_リンク", "株価(円)", "単元購入額(万円)", "特徴・サービス",
+            "仕分け", "エントリー判定", "コード", "銘柄名_リンク", "株価(円)", "単元購入額(万円)", "特徴・サービス", "直近決算日",
             "売上高成長率(%)", "時価総額(億円)", "インサイダー保有率(%)", "高値下落率(%)",
             "市場", "平均年齢", "X口コミ", "財務健全性", "PER", "3年後想定倍率", "代表取締役"
         ]
@@ -4198,6 +4400,7 @@ with tab1:
             "株価(円)": st.column_config.NumberColumn("1株価格", format="%d 円", help="単元未満株（1株取引）で購入できる概算株価"),
             "単元購入額(万円)": st.column_config.NumberColumn("単元株(100株)", format="%.1f 万円", help="通常の単元（100株）購入に必要な資金"),
             "特徴・サービス": st.column_config.TextColumn("特徴・サービス (四季報要約)", width="large"),
+            "直近決算日": st.column_config.TextColumn("直近決算日", width="medium", help="直近の決算発表予定日。14日以内は警戒アラート（🚨超警戒/⚠️警戒）が点灯します"),
             "売上高成長率(%)": st.column_config.NumberColumn("売上成長率", format="+%.1f %%", help="遠藤式最重要：本業の急成長（+20%以上が理想）"),
             "時価総額(億円)": st.column_config.NumberColumn("時価総額", format="%.1f 億円", help="遠藤式最重要：身軽な小型株（300億円以下）"),
             "インサイダー保有率(%)": st.column_config.NumberColumn("オーナー保有率", format="%.1f %%", help="創業者・役員の保有比率（20%以上が理想）"),

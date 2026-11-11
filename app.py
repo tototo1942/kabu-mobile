@@ -3142,6 +3142,7 @@ def render_stock_deep_dive(idx, tab1_df):
                 set_stock_status(stock_code, "excluded")
                 # 除外にした場合は一覧から隠すため、選択状態を解除して全一覧に戻す！
                 st.session_state.selected_stock_code = None
+                st.session_state.tab2_selected_code = None
                 st.toast(f"❌ {stock_code} {stock_name} を対象外に設定し、一覧から非表示にしました。", icon="🗑️")
                 st.rerun()
 
@@ -4316,6 +4317,41 @@ def show_terms_dialog():
         st.rerun()
 
 # ==========================================
+# FX目線での統合売買・エントリー判定関数（全タブ共通）
+# // MAINTENANCE_REQUIRED: テクニカル判定基準を更新する際はここを保守してください
+# ==========================================
+def get_quick_entry_signal(row):
+    c_str = str(row.get("コード", "")).strip()
+    if "stock_entry_cache" in st.session_state and c_str in st.session_state.stock_entry_cache:
+        return st.session_state.stock_entry_cache[c_str]
+    high_drop = row.get("高値下落率(%)", None)
+    trend = str(row.get("チャートトレンド", ""))
+    
+    if "下降トレンド" in trend:
+        return "🔴 ⚠️ 落ちるナイフ / 下降中"
+    
+    if pd.notna(high_drop):
+        try:
+            h_val = float(high_drop)
+            if h_val <= 3.0:
+                return "🟡 ⏳ 押し目待ち（過熱・高値圏）"
+            elif 3.0 < h_val <= 6.0:
+                return "🔵 🚀 高値ブレイク（上昇圏）"
+            elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
+                return "🟢 🎯 押し目買い好機（25日線上）"
+            elif 18.0 < h_val < 35.0:
+                return "⚪ ⏳ 深押し（25日線越え待ち）"
+            elif h_val >= 35.0:
+                return "🟣 🔄 リバウンド途上（警戒）"
+        except Exception:
+            pass
+    
+    if "上昇トレンド" in trend:
+        return "🟢 🎯 押し目買い好機（25日線上）"
+    return "⚪ ⏳ 深押し（25日線越え待ち）"
+
+
+# ==========================================
 # アプリ最上部ナビゲーションタブ（主要2タブに厳選）
 # ==========================================
 tab1, tab2 = st.tabs([
@@ -4473,38 +4509,6 @@ with tab1:
         df["仕分け"] = df["コード"].astype(str).map(get_status_badge)
 
         # FX目線での統合売買・エントリー判定列を付与（詳細画面と完全統一）
-        def get_quick_entry_signal(row):
-            c_str = str(row.get("コード", "")).strip()
-            # 詳細画面でリアルタイム診断済みの場合は最優先で同期
-            if "stock_entry_cache" in st.session_state and c_str in st.session_state.stock_entry_cache:
-                return st.session_state.stock_entry_cache[c_str]
-            high_drop = row.get("高値下落率(%)", None)
-            trend = str(row.get("チャートトレンド", ""))
-            
-            # 1. 下降トレンド判定
-            if "下降トレンド" in trend:
-                return "🔴 ⚠️ 落ちるナイフ / 下降中"
-            
-            # 2. 高値下落率がある場合の精密分類
-            if pd.notna(high_drop):
-                h_val = float(high_drop)
-                if h_val <= 3.0:
-                    return "🟡 ⏳ 押し目待ち（過熱・高値圏）"
-                elif 3.0 < h_val <= 6.0:
-                    return "🔵 🚀 高値ブレイク（上昇圏）"
-                elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
-                    # 健全な浅い押し目かつ上昇トレンド
-                    return "🟢 🎯 押し目買い好機（25日線上）"
-                elif 18.0 < h_val < 35.0:
-                    # 3996などの深押し（20%〜30%下落）は25日線を割っているため深押し判定
-                    return "⚪ ⏳ 深押し（25日線越え待ち）"
-                elif h_val >= 35.0:
-                    return "🟣 🔄 リバウンド途上（警戒）"
-            
-            if "上昇トレンド" in trend:
-                return "🟢 🎯 押し目買い好機（25日線上）"
-            return "⚪ ⏳ 深押し（25日線越え待ち）"
-
         df["エントリー判定"] = df.apply(get_quick_entry_signal, axis=1)
 
         # 上部：仕分け表示フィルター切替 ＆ 件数インライン集約
@@ -4813,208 +4817,250 @@ with tab1:
 # // MAINTENANCE_REQUIRED: 監視・保有株のタブ構造および損切りルール変更時はここを保守してください
 # ==========================================
 with tab2:
-    # 監視中銘柄リストの抽出
-    current_status_dict = st.session_state.get("stock_status", {})
-    watching_codes = [c for c, info in current_status_dict.items() if isinstance(info, dict) and info.get("status") == "watching"]
-    watch_cnt = len(watching_codes)
-    hold_cnt = len(st.session_state.get("my_watchlist", []))
-
-    st.markdown("### 💼 ポートフォリオ ＆ 銘柄ウォッチ管理")
-
-    # サブタブ切り替えラジオスイッチ
-    subtab_mode = st.radio(
-        "表示切り替え:",
-        options=[
-            f"👀 監視中の気になる株 ({watch_cnt}社)",
-            f"💰 実際に保有中の株 ({hold_cnt}社)"
-        ],
-        horizontal=True,
-        label_visibility="collapsed",
-        key="tab2_subtab_selector"
-    )
-
-    if "監視中の気になる株" in subtab_mode:
-        st.markdown(f"#### 👀 監視中の気になる株・本命候補 ({watch_cnt}社)")
-        st.caption("スクリーニングから「⭐️ 監視継続」に選定した本命銘柄群です。買い場（押し目や好決算の初動）が訪れて実際に購入した際は、各カードの**「🎯 購入した（保有株へ登録）」**から約定単価と株数を入力して保有株ポートフォリオへ昇格移動できます。")
-
-        if watch_cnt == 0:
-            st.info("💡 現在、監視中の銘柄はありません。タブ1の銘柄一覧・詳細分析画面で「⭐️ 監視継続（本命）」を押すとここに追加されます。")
+    # 選択中の銘柄詳細があれば、Tab 2 上でダイレクトに深掘り分析カードを描画！
+    tab2_selected = st.session_state.get("tab2_selected_code", None)
+    if tab2_selected:
+        m_row = raw_df[raw_df["コード"].astype(str) == str(tab2_selected)]
+        if not m_row.empty:
+            if st.button("⬅️ 監視・保有株一覧に戻る", key="btn_tab2_back_top", type="primary", use_container_width=True):
+                st.session_state.tab2_selected_code = None
+                st.rerun()
+            render_stock_deep_dive(0, m_row.reset_index(drop=True))
+            if st.button("⬅️ 監視・保有株一覧に戻る", key="btn_tab2_back_bottom", type="primary", use_container_width=True):
+                st.session_state.tab2_selected_code = None
+                st.rerun()
         else:
-            for c_code in watching_codes:
-                row_m = raw_df[raw_df["コード"].astype(str) == str(c_code)]
-                if row_m.empty:
-                    s_name = "不明"
-                    s_market = "-"
-                    s_price = "-"
-                    s_growth = "-"
-                    s_mcap = "-"
-                    s_trend = "-"
-                    s_business = "-"
-                    s_earnings = "-"
-                else:
-                    r_val = row_m.iloc[0]
-                    s_name = r_val.get("銘柄名", "不明")
-                    s_market = r_val.get("市場", "-")
-                    s_price = r_val.get("株価(円)", "-")
-                    s_growth = r_val.get("売上高成長率(%)", "-")
-                    s_mcap = r_val.get("時価総額(億円)", "-")
-                    s_trend = r_val.get("チャートトレンド", "-")
-                    s_business = r_val.get("特徴・サービス", "-")
-                    s_earnings = r_val.get("直近決算日", "-")
+            st.warning(f"⚠️ 銘柄コード {tab2_selected} の詳細データが見つかりませんでした。")
+            if st.button("⬅️ 一覧に戻る", key="btn_tab2_back_err", use_container_width=True):
+                st.session_state.tab2_selected_code = None
+                st.rerun()
+    else:
+        # 監視中銘柄リストの抽出
+        current_status_dict = st.session_state.get("stock_status", {})
+        watching_codes = [c for c, info in current_status_dict.items() if isinstance(info, dict) and info.get("status") == "watching"]
+        watch_cnt = len(watching_codes)
+        hold_cnt = len(st.session_state.get("my_watchlist", []))
 
-                # 登録されているメモ
-                note_text = st.session_state.get("stock_notes", {}).get(str(c_code), {}).get("note", "").strip()
+        st.markdown("### 💼 ポートフォリオ ＆ 銘柄ウォッチ管理")
 
-                with st.container(border=True):
-                    # 上段：銘柄名、コード、市場、詳細ボタン
-                    head_col1, head_col2 = st.columns([3.5, 1.5])
-                    with head_col1:
-                        st.markdown(f"##### ⭐️ **{c_code} {s_name}** `({s_market})`")
-                    with head_col2:
-                        if st.button("🔍 詳細を見る", key=f"view_w_{c_code}", use_container_width=True):
-                            st.session_state.selected_stock_code = str(c_code)
-                            st.rerun()
+        # サブタブ切り替えラジオスイッチ
+        subtab_mode = st.radio(
+            "表示切り替え:",
+            options=[
+                f"👀 監視中の気になる株 ({watch_cnt}社)",
+                f"💰 実際に保有中の株 ({hold_cnt}社)"
+            ],
+            horizontal=True,
+            label_visibility="collapsed",
+            key="tab2_subtab_selector"
+        )
 
-                    # 中段：主要指標
-                    m1, m2, m3, m4 = st.columns(4)
-                    price_display = f"{s_price:,.0f} 円" if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else f"{s_price} 円"
-                    m1.metric("現在株価", price_display)
-                    growth_display = f"{s_growth:+.1f} %" if (isinstance(s_growth, (int, float)) and pd.notna(s_growth)) else f"{s_growth} %"
-                    m2.metric("売上高成長率", growth_display)
-                    mcap_display = f"{s_mcap:,.0f} 億円" if (isinstance(s_mcap, (int, float)) and pd.notna(s_mcap)) else f"{s_mcap} 億円"
-                    m3.metric("時価総額", mcap_display)
-                    m4.metric("決算予定日", f"{s_earnings}")
+        if "監視中の気になる株" in subtab_mode:
+            st.markdown(f"#### 👀 監視中の気になる株・本命候補 ({watch_cnt}社)")
+            st.caption("スクリーニングから「⭐️ 監視継続」に選定した本命銘柄群です。買い場（押し目や好決算の初動）が訪れて実際に購入した際は、各カードの**「🎯 購入した（保有株へ登録）」**から約定単価と株数を入力して保有株ポートフォリオへ昇格移動できます。")
 
-                    if s_business and s_business != "-":
-                        st.caption(f"🏢 **事業内容**: {s_business}")
-                    if note_text:
-                        st.info(f"📝 **マイメモ**: {note_text}")
+            if watch_cnt == 0:
+                st.info("💡 現在、監視中の銘柄はありません。タブ1の銘柄一覧・詳細分析画面で「⭐️ 監視継続（本命）」を押すとここに追加されます。")
+            else:
+                for c_code in watching_codes:
+                    row_m = raw_df[raw_df["コード"].astype(str) == str(c_code)]
+                    if row_m.empty:
+                        s_name = "不明"
+                        s_market = "-"
+                        s_price = "-"
+                        s_growth = "-"
+                        s_mcap = "-"
+                        s_trend = "-"
+                        s_business = "-"
+                        s_earnings = "-"
+                        s_high_drop = None
+                        s_signal = "-"
+                    else:
+                        r_val = row_m.iloc[0]
+                        s_name = r_val.get("銘柄名", "不明")
+                        s_market = r_val.get("市場", "-")
+                        s_price = r_val.get("株価(円)", "-")
+                        s_growth = r_val.get("売上高成長率(%)", "-")
+                        s_mcap = r_val.get("時価総額(億円)", "-")
+                        s_trend = r_val.get("チャートトレンド", "-")
+                        s_business = r_val.get("特徴・サービス", "-")
+                        s_earnings = r_val.get("直近決算日", "-")
+                        s_high_drop = r_val.get("高値下落率(%)", None)
+                        s_signal = get_quick_entry_signal(r_val)
 
-                    # 下段：購入昇格フォーム ＆ 監視解除ボタン
-                    act_col1, act_col2 = st.columns([2.5, 1.0])
-                    with act_col1:
-                        with st.expander("🎯 購入した（保有株リストへ昇格登録）", expanded=False):
-                            default_buy_p = float(s_price) if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else 1000.0
-                            buy_in_p = st.number_input(f"購入単価 (円)", min_value=1.0, value=default_buy_p, step=10.0, key=f"buy_p_{c_code}")
-                            buy_in_s = st.number_input(f"保有株数 (株)", min_value=100, value=100, step=100, key=f"buy_s_{c_code}")
-                            if st.button(f"💰 保有株として確定登録", key=f"btn_confirm_buy_{c_code}", type="primary", use_container_width=True):
-                                # 既に保有リストにあるかチェック
-                                existing = next((item for item in st.session_state.my_watchlist if str(item.get("code")) == str(c_code)), None)
-                                if existing:
-                                    existing["buy_price"] = buy_in_p
-                                    existing["shares"] = buy_in_s
-                                else:
-                                    st.session_state.my_watchlist.append({
-                                        "code": str(c_code),
-                                        "buy_price": buy_in_p,
-                                        "shares": buy_in_s
-                                    })
-                                save_watchlist(st.session_state.my_watchlist)
-                                st.toast(f"🎉 {c_code} {s_name} を保有株リストに登録しました！", icon="💰")
+                    # 登録されているメモ
+                    note_text = st.session_state.get("stock_notes", {}).get(str(c_code), {}).get("note", "").strip()
+
+                    with st.container(border=True):
+                        # 上段：銘柄名、コード、市場、詳細ボタン
+                        head_col1, head_col2 = st.columns([3.5, 1.5])
+                        with head_col1:
+                            st.markdown(f"##### ⭐️ **{c_code} {s_name}** `({s_market})`")
+                        with head_col2:
+                            if st.button("🔍 詳細を見る", key=f"view_w_{c_code}", use_container_width=True, type="primary"):
+                                st.session_state.tab2_selected_code = str(c_code)
                                 st.rerun()
 
-                    with act_col2:
-                        if st.button("🗑️ 監視解除", key=f"del_watch_{c_code}", use_container_width=True):
-                            set_stock_status(c_code, "unreviewed")
-                            st.toast(f"⭐️ {c_code} {s_name} の監視を解除しました。")
-                            st.rerun()
+                        # 中段：主要4指標（株価、売上成長率、時価総額、チャート状況）
+                        m1, m2, m3, m4 = st.columns(4)
+                        price_display = f"{s_price:,.0f} 円" if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else f"{s_price} 円"
+                        m1.metric("現在株価", price_display)
+                        growth_display = f"{s_growth:+.1f} %" if (isinstance(s_growth, (int, float)) and pd.notna(s_growth)) else f"{s_growth} %"
+                        m2.metric("売上高成長率", growth_display)
+                        mcap_display = f"{s_mcap:,.0f} 億円" if (isinstance(s_mcap, (int, float)) and pd.notna(s_mcap)) else f"{s_mcap} 億円"
+                        m3.metric("時価総額", mcap_display)
+                        m4.metric("チャート状況", f"{s_trend}")
 
-    else:
-        # ==========================================
-        # 💰 実際に保有中の株（ポートフォリオ ＆ 損切り管理）
-        # ==========================================
-        st.markdown("#### 💰 実際に保有中の株・ポートフォリオ管理")
-        st.markdown("遠藤洋氏が提唱する **「集中投資した本命銘柄を1日5分だけ徹底管理する」** ための専用シートです。**マイナス10%〜15%での機械的な損切りルール** を徹底し、塩漬けを防ぎます。")
+                        # チャートトレンド ＆ エントリー判定 ＆ 決算日の一体型ステータスバー
+                        drop_str = f"（高値から {float(s_high_drop):.1f}% 下落）" if (pd.notna(s_high_drop) and isinstance(s_high_drop, (int, float))) else ""
+                        st.markdown(f"""
+                        <div style="background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 6px 12px; margin: 4px 0 10px 0; font-size: 0.83rem; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; line-height: 1.4;">
+                            <span>📈 <strong>チャート</strong>: <strong style="color: #1E3A8A;">{s_trend}</strong> {drop_str}</span>
+                            <span>🎯 <strong>エントリー現在地</strong>: <strong style="color: #0284C7;">{s_signal}</strong></span>
+                            <span>📅 <strong>決算予定</strong>: <span style="color: #475569; font-weight: 600;">{s_earnings}</span></span>
+                        </div>
+                        """, unsafe_allow_html=True)
 
-        col_add, col_info = st.columns([1, 2])
-        with col_add:
-            with st.container(border=True):
-                st.markdown("##### ➕ 保有銘柄の直接追加")
-                input_code = st.text_input("銘柄コード (例: 5139)", "", key="direct_add_code")
-                input_price = st.number_input("購入単価 (円)", min_value=1.0, value=1000.0, step=10.0, key="direct_add_price")
-                input_shares = st.number_input("保有株数 (株)", min_value=100, value=100, step=100, key="direct_add_shares")
-                
-                if st.button("保有株リストに追加", use_container_width=True, key="btn_direct_add_hold"):
-                    if input_code:
-                        existing = next((item for item in st.session_state.my_watchlist if str(item.get("code")) == str(input_code)), None)
-                        if existing:
-                            existing["buy_price"] = input_price
-                            existing["shares"] = input_shares
-                        else:
-                            st.session_state.my_watchlist.append({
-                                "code": str(input_code),
-                                "buy_price": input_price,
-                                "shares": input_shares
-                            })
-                        save_watchlist(st.session_state.my_watchlist)
-                        st.success(f"{input_code} を保有株として登録しました！")
-                        st.rerun()
-
-        with col_info:
-            with st.container(border=True):
-                st.markdown("##### 📋 遠藤式・1日5分点検チェックリスト (書籍P.21)")
-                st.checkbox("1. ビジネスにトラブルは生じていないか？ (IR・SNS)", key="chk_trouble")
-                st.checkbox("2. 経営方針の変更はないか？", key="chk_policy")
-                st.checkbox("3. 経営陣が自社株を売っていないか？ (大量保有報告書)", key="chk_insider_sell")
-                st.checkbox("4. 想定していた売上高や純利益は達成できそうか？", key="chk_forecast")
-                st.warning("⚠️ **『投資した会社を好きにならないように！（書籍P.21）』** どんなに期待していた会社でも、ストーリーが崩れたら即座に撤退します。")
-
-        # 登録銘柄一覧と損切りアラート
-        if not st.session_state.get("my_watchlist", []):
-            st.info("💡 現在、保有株として登録されている銘柄はありません。上記の直接追加フォーム、または「👀 監視中の気になる株」の「🎯 購入した」ボタンから登録してください。")
-        else:
-            st.markdown("---")
-            st.markdown(f"##### 🎯 集中投資ポートフォリオ一覧 ({hold_cnt}銘柄)")
-
-            for item in st.session_state.my_watchlist:
-                c = item["code"]
-                buy_p = item["buy_price"]
-                shares = item["shares"]
-                
-                row_match = raw_df[raw_df["コード"].astype(str) == str(c)]
-                stock_name = row_match.iloc[0]["銘柄名"] if not row_match.empty else "不明"
-                
-                # 株価の取得（raw_dfにあればそれを使用、なければyfinanceフォールバック）
-                current_p = buy_p
-                if not row_match.empty and pd.notna(row_match.iloc[0].get("株価(円)")):
-                    try:
-                        current_p = float(row_match.iloc[0]["株価(円)"])
-                    except Exception:
-                        current_p = buy_p
-                else:
-                    try:
-                        import yfinance as yf
-                        t = yf.Ticker(f"{c}.T")
-                        current_p = t.info.get("currentPrice") or t.info.get("regularMarketPrice") or buy_p
-                    except Exception:
-                        pass
-
-                pnl_pct = round(((current_p - buy_p) / buy_p) * 100, 2)
-                total_buy = buy_p * shares
-                total_val = current_p * shares
-                diff_yen = int(total_val - total_buy)
-
-                with st.container(border=True):
-                    w1, w2, w3, w4 = st.columns(4)
-                    w1.markdown(f"**{c} {stock_name}**")
-                    w1.caption(f"保有: {shares:,} 株 / 買値: {buy_p:,.0f} 円")
-                    
-                    w2.metric("現在株価", f"{current_p:,.0f} 円", f"{pnl_pct:+.2f} %")
-                    w3.metric("評価損益額", f"{diff_yen:+,} 円")
-
-                    with w4:
-                        if pnl_pct <= -15.0:
-                            st.error("🚨 **【損切り警告】** -15%突破！書籍ルールに基づき機械的なロスカットを強く推奨します。")
-                        elif pnl_pct <= -10.0:
-                            st.warning("⚠️ **【警戒】** -10%到達。購入シナリオを再確認してください。")
-                        else:
-                            st.success("✅ 健全圏内 (成長ストーリーを継続フォロー)")
+                        if s_business and s_business != "-":
+                            st.caption(f"🏢 **事業内容**: {s_business}")
                         
-                        if st.button("🗑️ 保有リストから解除", key=f"del_watchlist_{c}", use_container_width=True):
-                            st.session_state.my_watchlist = [w for w in st.session_state.my_watchlist if str(w.get("code")) != str(c)]
+                        # 📝 メモ等は一覧表示時はデフォルトで折りたたんで隠す
+                        if note_text:
+                            with st.expander("📝 登録メモ・投資戦略を確認", expanded=False):
+                                st.info(note_text)
+
+                        # 下段：購入昇格フォーム ＆ 監視解除ボタン
+                        act_col1, act_col2 = st.columns([2.5, 1.0])
+                        with act_col1:
+                            with st.expander("🎯 購入した（保有株リストへ昇格登録）", expanded=False):
+                                default_buy_p = float(s_price) if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else 1000.0
+                                buy_in_p = st.number_input(f"購入単価 (円)", min_value=1.0, value=default_buy_p, step=10.0, key=f"buy_p_{c_code}")
+                                buy_in_s = st.number_input(f"保有株数 (株)", min_value=100, value=100, step=100, key=f"buy_s_{c_code}")
+                                if st.button(f"💰 保有株として確定登録", key=f"btn_confirm_buy_{c_code}", type="primary", use_container_width=True):
+                                    # 既に保有リストにあるかチェック
+                                    existing = next((item for item in st.session_state.my_watchlist if str(item.get("code")) == str(c_code)), None)
+                                    if existing:
+                                        existing["buy_price"] = buy_in_p
+                                        existing["shares"] = buy_in_s
+                                    else:
+                                        st.session_state.my_watchlist.append({
+                                            "code": str(c_code),
+                                            "buy_price": buy_in_p,
+                                            "shares": buy_in_s
+                                        })
+                                    save_watchlist(st.session_state.my_watchlist)
+                                    st.toast(f"🎉 {c_code} {s_name} を保有株リストに登録しました！", icon="💰")
+                                    st.rerun()
+
+                        with act_col2:
+                            if st.button("🗑️ 監視解除", key=f"del_watch_{c_code}", use_container_width=True):
+                                set_stock_status(c_code, "unreviewed")
+                                st.toast(f"⭐️ {c_code} {s_name} の監視を解除しました。")
+                                st.rerun()
+
+        else:
+            # ==========================================
+            # 💰 実際に保有中の株（ポートフォリオ ＆ 損切り管理）
+            # ==========================================
+            st.markdown("#### 💰 実際に保有中の株・ポートフォリオ管理")
+            st.markdown("遠藤洋氏が提唱する **「集中投資した本命銘柄を1日5分だけ徹底管理する」** ための専用シートです。**マイナス10%〜15%での機械的な損切りルール** を徹底し、塩漬けを防ぎます。")
+
+            col_add, col_info = st.columns([1, 2])
+            with col_add:
+                with st.container(border=True):
+                    st.markdown("##### ➕ 保有銘柄の直接追加")
+                    input_code = st.text_input("銘柄コード (例: 5139)", "", key="direct_add_code")
+                    input_price = st.number_input("購入単価 (円)", min_value=1.0, value=1000.0, step=10.0, key="direct_add_price")
+                    input_shares = st.number_input("保有株数 (株)", min_value=100, value=100, step=100, key="direct_add_shares")
+                    
+                    if st.button("保有株リストに追加", use_container_width=True, key="btn_direct_add_hold"):
+                        if input_code:
+                            existing = next((item for item in st.session_state.my_watchlist if str(item.get("code")) == str(input_code)), None)
+                            if existing:
+                                existing["buy_price"] = input_price
+                                existing["shares"] = input_shares
+                            else:
+                                st.session_state.my_watchlist.append({
+                                    "code": str(input_code),
+                                    "buy_price": input_price,
+                                    "shares": input_shares
+                                })
                             save_watchlist(st.session_state.my_watchlist)
-                            st.toast(f"{c} を保有リストから削除しました。")
+                            st.success(f"{input_code} を保有株として登録しました！")
                             st.rerun()
+
+            with col_info:
+                with st.container(border=True):
+                    st.markdown("##### 📋 遠藤式・1日5分点検チェックリスト (書籍P.21)")
+                    st.checkbox("1. ビジネスにトラブルは生じていないか？ (IR・SNS)", key="chk_trouble")
+                    st.checkbox("2. 経営方針の変更はないか？", key="chk_policy")
+                    st.checkbox("3. 経営陣が自社株を売っていないか？ (大量保有報告書)", key="chk_insider_sell")
+                    st.checkbox("4. 想定していた売上高や純利益は達成できそうか？", key="chk_forecast")
+                    st.warning("⚠️ **『投資した会社を好きにならないように！（書籍P.21）』** どんなに期待していた会社でも、ストーリーが崩れたら即座に撤退します。")
+
+            # 登録銘柄一覧と損切りアラート
+            if not st.session_state.get("my_watchlist", []):
+                st.info("💡 現在、保有株として登録されている銘柄はありません。上記の直接追加フォーム、または「👀 監視中の気になる株」の「🎯 購入した」ボタンから登録してください。")
+            else:
+                st.markdown("---")
+                st.markdown(f"##### 🎯 集中投資ポートフォリオ一覧 ({hold_cnt}銘柄)")
+
+                for item in st.session_state.my_watchlist:
+                    c = item["code"]
+                    buy_p = item["buy_price"]
+                    shares = item["shares"]
+                    
+                    row_match = raw_df[raw_df["コード"].astype(str) == str(c)]
+                    stock_name = row_match.iloc[0]["銘柄名"] if not row_match.empty else "不明"
+                    s_trend_h = row_match.iloc[0].get("チャートトレンド", "-") if not row_match.empty else "-"
+                    s_signal_h = get_quick_entry_signal(row_match.iloc[0]) if not row_match.empty else "-"
+                    
+                    # 株価の取得（raw_dfにあればそれを使用、なければyfinanceフォールバック）
+                    current_p = buy_p
+                    if not row_match.empty and pd.notna(row_match.iloc[0].get("株価(円)")):
+                        try:
+                            current_p = float(row_match.iloc[0]["株価(円)"])
+                        except Exception:
+                            current_p = buy_p
+                    else:
+                        try:
+                            import yfinance as yf
+                            t = yf.Ticker(f"{c}.T")
+                            current_p = t.info.get("currentPrice") or t.info.get("regularMarketPrice") or buy_p
+                        except Exception:
+                            pass
+
+                    pnl_pct = round(((current_p - buy_p) / buy_p) * 100, 2)
+                    total_buy = buy_p * shares
+                    total_val = current_p * shares
+                    diff_yen = int(total_val - total_buy)
+
+                    with st.container(border=True):
+                        w1, w2, w3, w4 = st.columns(4)
+                        with w1:
+                            st.markdown(f"**{c} {stock_name}**")
+                            st.caption(f"保有: {shares:,} 株 / 買値: {buy_p:,.0f} 円")
+                            st.caption(f"📈 {s_trend_h}")
+                            if st.button("🔍 詳細を見る", key=f"view_hold_{c}", use_container_width=True):
+                                st.session_state.tab2_selected_code = str(c)
+                                st.rerun()
+                        
+                        w2.metric("現在株価", f"{current_p:,.0f} 円", f"{pnl_pct:+.2f} %")
+                        w3.metric("評価損益額", f"{diff_yen:+,} 円")
+
+                        with w4:
+                            if pnl_pct <= -15.0:
+                                st.error("🚨 **【損切り警告】** -15%突破！書籍ルールに基づき機械的なロスカットを強く推奨します。")
+                            elif pnl_pct <= -10.0:
+                                st.warning("⚠️ **【警戒】** -10%到達。購入シナリオを再確認してください。")
+                            else:
+                                st.success("✅ 健全圏内 (成長ストーリーを継続フォロー)")
+                            
+                            if st.button("🗑️ 保有リストから解除", key=f"del_watchlist_{c}", use_container_width=True):
+                                st.session_state.my_watchlist = [w for w in st.session_state.my_watchlist if str(w.get("code")) != str(c)]
+                                save_watchlist(st.session_state.my_watchlist)
+                                st.toast(f"{c} を保有リストから削除しました。")
+                                st.rerun()
 
 
 

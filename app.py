@@ -1933,7 +1933,8 @@ def load_saved_conditions():
         "market_pro_other": False,
         "show_conditions": True,
         "keyword": "",
-        "selected_genres": []
+        "selected_genres": [],
+        "active_preset": None
     }
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -1973,6 +1974,7 @@ def save_current_conditions():
         "market_pro_other": bool(st.session_state.get("market_pro_other", True)),
         "show_conditions": bool(st.session_state.get("show_conditions", True)),
         "keyword": str(st.session_state.get("keyword_input", "")),
+        "active_preset": st.session_state.get("active_preset", None),
         "selected_genres": list(st.session_state.get("selected_genres", []))
     }
     try:
@@ -2171,6 +2173,7 @@ def clear_all_filters():
     st.session_state.market_pro_other = True
     st.session_state.keyword_input = ""
     st.session_state.selected_genres = []
+    st.session_state.active_preset = None
     save_current_conditions()
     st.toast("🔄 フィルター条件をすべてクリアしました。『↩️ 取消』で復元できます。", icon="✨")
 
@@ -2228,6 +2231,7 @@ else:
 
 def set_preset_endo_standard():
     """① 👑 王道・集中投資型 (約10〜20社)"""
+    st.session_state.active_preset = "👑 王道・集中投資型 【本命★5】"
     st.session_state.mcap_max = 200.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 30.0
@@ -2250,6 +2254,7 @@ def set_preset_endo_standard():
 
 def set_preset_safe_dip():
     """② 🛡️ 堅実安全・押し目買い型 (約15〜25社)"""
+    st.session_state.active_preset = "🛡️ 堅実安全・押し目型 【安全★4】"
     st.session_state.mcap_max = 300.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 20.0
@@ -2272,6 +2277,7 @@ def set_preset_safe_dip():
 
 def set_preset_tenbagger():
     """③ 🚀 爆発的テンバガー狙い型 (約10〜15社)"""
+    st.session_state.active_preset = "🚀 爆発的テンバガー狙い型 【急成長★4.5】"
     st.session_state.mcap_max = 200.0
     st.session_state.rev_growth_min = 30.0
     st.session_state.insider_min = 20.0
@@ -2294,6 +2300,7 @@ def set_preset_tenbagger():
 
 def set_preset_full_comp():
     """④ 🔥 全条件クリア・超お宝型 (1社〜極少数)"""
+    st.session_state.active_preset = "🔥 全条件クリア・超お宝型 【究極★6】"
     st.session_state.mcap_max = 300.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 20.0
@@ -4377,6 +4384,34 @@ with tab1:
     with top_btn_col2:
         if st.button(refresh_btn_label, use_container_width=True, help="タップすると最新のIPOや卒業銘柄を再スクリーニングしてデータを更新できます"):
             show_data_refresh_dialog()
+
+    # ==========================================
+    # 🎯 適用中プリセット ＆ フィルター条件バッジ一体型サマリーカード
+    # ==========================================
+    current_preset_label = st.session_state.get("active_preset", None)
+    if current_preset_label:
+        preset_badge_html = f'<span style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); color: #1D4ED8; border: 1.5px solid #3B82F6; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.90rem;">{current_preset_label}</span>'
+    else:
+        preset_badge_html = '<span style="background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">⚙️ カスタム設定</span>'
+
+    tags_html = "".join([f'<span class="filter-tag" style="display: inline-block; background-color: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; margin: 2px 4px;">{f}</span>' for f in active_filters])
+
+    st.markdown(f"""
+    <div style="background-color: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 10px; padding: 10px 14px; margin: 10px 0 14px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+            <div style="font-size: 0.92rem; font-weight: 700; color: #1E3A8A; display: flex; align-items: center; gap: 6px;">
+                <span>🎯 適用プリセット:</span> {preset_badge_html}
+            </div>
+            <div style="font-size: 0.88rem; font-weight: 700; color: #1D4ED8;">
+                👉 該当: <strong>{len(df)}社</strong> / {base_population_label}
+            </div>
+        </div>
+        <div style="font-size: 0.82rem; color: #475569; line-height: 1.6;">
+            <span style="font-weight: 700; color: #334155;">【適用中の条件】:</span>
+            {tags_html if tags_html else '<span style="color: #94A3B8;">なし（全社表示）</span>'}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
     
     if len(df) == 0:
         st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**")

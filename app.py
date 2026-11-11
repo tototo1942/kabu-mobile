@@ -2846,6 +2846,9 @@ else:
     # 全ての市場チェックが外れた場合は空（0件）
     df = raw_df.head(0).copy()
 
+# 市場フィルター適用後の母集団を退避（条件緩和シミュレーション用）
+market_filtered_df = df.copy()
+
 if filter_trend_up:
     df = df[df["チャートトレンド"].str.contains("上昇トレンド", na=False)]
     active_filters.append("上昇トレンド 🚀")
@@ -2918,6 +2921,157 @@ if selected_genres:
     # 通常モード（小型株モード）でジャンル選択時のみ、ジャンルリストで絞り込み
     if not is_theme_mode and "ジャンルリスト" in df.columns:
         df = df[df["ジャンルリスト"].map(lambda gl: any(g in gl for g in selected_genres) if isinstance(gl, list) else False)]
+
+
+# ==========================================
+# 条件緩和アシスト（ゼロヒット対策・惜しい銘柄シミュレーション）関数
+# MAINTENANCE_REQUIRED: 新たなフィルター項目を追加・改修した際は、以下のルール一覧も併せて更新してください
+# ==========================================
+def get_active_condition_rules(is_theme_mode_flag=False):
+    rules = []
+    
+    if bool(st.session_state.get("filter_trend_up", False)):
+        rules.append({
+            "key": "filter_trend_up",
+            "name": "📈 上昇トレンド 🚀 のみ",
+            "condition_fn": lambda d: d["チャートトレンド"].str.contains("上昇トレンド", na=False),
+            "reset_action": lambda: st.session_state.update({"filter_trend_up": False})
+        })
+        
+    if bool(st.session_state.get("filter_young_age", False)):
+        rules.append({
+            "key": "filter_young_age",
+            "name": "👥 社員の平均年齢 35歳以下",
+            "condition_fn": lambda d: (d["平均年齢_数値"].notna()) & (d["平均年齢_数値"] <= 35.0),
+            "reset_action": lambda: st.session_state.update({"filter_young_age": False})
+        })
+
+    if bool(st.session_state.get("filter_under_10man", False)):
+        rules.append({
+            "key": "filter_under_10man",
+            "name": "💰 10万円以下で購入可",
+            "condition_fn": lambda d: (d["単元購入額(万円)"].notna()) & (d["単元購入額(万円)"] <= 10.0) if "単元購入額(万円)" in d.columns else pd.Series(True, index=d.index),
+            "reset_action": lambda: st.session_state.update({"filter_under_10man": False})
+        })
+
+    if bool(st.session_state.get("filter_debt_free", False)):
+        rules.append({
+            "key": "filter_debt_free",
+            "name": "🛡️ 実質無借金(極めて安全)",
+            "condition_fn": lambda d: d["財務健全性"].str.contains("実質無借金", na=False),
+            "reset_action": lambda: st.session_state.update({"filter_debt_free": False})
+        })
+
+    if bool(st.session_state.get("filter_pe_max", False)):
+        rules.append({
+            "key": "filter_pe_max",
+            "name": "🎯 適正PER (40倍以下)",
+            "condition_fn": lambda d: (d["PER"].isna()) | (d["PER"] <= 40.0),
+            "reset_action": lambda: st.session_state.update({"filter_pe_max": False})
+        })
+
+    if bool(st.session_state.get("filter_dip", False)):
+        rules.append({
+            "key": "filter_dip",
+            "name": "📉 押し目買い圏 (高値比-10%〜-35%)",
+            "condition_fn": lambda d: d["押し目フラグ"] == "押し目買い圏",
+            "reset_action": lambda: st.session_state.update({"filter_dip": False})
+        })
+
+    if bool(st.session_state.get("filter_high_growth", False)):
+        rules.append({
+            "key": "filter_high_growth",
+            "name": "⚡ 超高成長 (+30%以上)",
+            "condition_fn": lambda d: d["売上高成長率(%)"] >= 30.0,
+            "reset_action": lambda: st.session_state.update({"filter_high_growth": False})
+        })
+
+    if bool(st.session_state.get("filter_tenbagger", False)):
+        rules.append({
+            "key": "filter_tenbagger",
+            "name": "🚀 3年後成長試算 2倍以上",
+            "condition_fn": lambda d: d["売上高成長率(%)"] >= 26.0,
+            "reset_action": lambda: st.session_state.update({"filter_tenbagger": False})
+        })
+
+    eff_mcap = float(st.session_state.get("mcap_max", 300.0))
+    if eff_mcap < 300.0:
+        rules.append({
+            "key": "mcap_max",
+            "name": f"🏢 時価総額 <= {int(eff_mcap)}億円（300億円以下に緩和）",
+            "condition_fn": lambda d: d["時価総額(億円)"] <= eff_mcap,
+            "reset_action": lambda: st.session_state.update({"mcap_max": 300.0})
+        })
+
+    cur_rev = float(st.session_state.get("rev_growth_min", 20.0))
+    if cur_rev > 20.0:
+        rules.append({
+            "key": "rev_growth_min",
+            "name": f"📈 売上高成長率 >= {int(cur_rev)}%（標準の20%以上に緩和）",
+            "condition_fn": lambda d: d["売上高成長率(%)"] >= cur_rev,
+            "reset_action": lambda: st.session_state.update({"rev_growth_min": 20.0})
+        })
+
+    cur_insider = float(st.session_state.get("insider_min", 20.0))
+    if cur_insider > 20.0:
+        rules.append({
+            "key": "insider_min",
+            "name": f"👔 創業者比率 >= {int(cur_insider)}%（標準の20%以上に緩和）",
+            "condition_fn": lambda d: d["インサイダー保有率(%)"] >= cur_insider,
+            "reset_action": lambda: st.session_state.update({"insider_min": 20.0})
+        })
+
+    cur_kw = str(st.session_state.get("keyword_input", "")).strip()
+    if cur_kw:
+        rules.append({
+            "key": "keyword_input",
+            "name": f"🔍 キーワード: '{cur_kw}'",
+            "condition_fn": lambda d: (
+                d["銘柄名"].str.contains(cur_kw, na=False) |
+                d["コード"].astype(str).str.contains(cur_kw, na=False) |
+                d["特徴・サービス"].str.contains(cur_kw, na=False)
+            ),
+            "reset_action": lambda: st.session_state.update({"keyword_input": ""})
+        })
+
+    cur_genres = list(st.session_state.get("selected_genres", []))
+    if cur_genres and not is_theme_mode_flag:
+        rules.append({
+            "key": "selected_genres",
+            "name": f"🏷️ ジャンル: {', '.join(cur_genres)}",
+            "condition_fn": lambda d: d["ジャンルリスト"].map(lambda gl: any(g in gl for g in cur_genres) if isinstance(gl, list) else False) if "ジャンルリスト" in d.columns else pd.Series(True, index=d.index),
+            "reset_action": lambda: st.session_state.update({"selected_genres": []})
+        })
+
+    return rules
+
+
+def simulate_single_filter_relaxation(base_df, rules):
+    if not rules or base_df is None or base_df.empty:
+        return []
+
+    results = []
+    for i, target_rule in enumerate(rules):
+        temp_df = base_df.copy()
+        for j, other_rule in enumerate(rules):
+            if i == j:
+                continue
+            try:
+                mask = other_rule["condition_fn"](temp_df)
+                temp_df = temp_df[mask]
+            except Exception:
+                pass
+        
+        hit_count = len(temp_df)
+        if hit_count > 0:
+            results.append({
+                "rule": target_rule,
+                "count": hit_count,
+                "df": temp_df
+            })
+            
+    results.sort(key=lambda x: x["count"], reverse=True)
+    return results
 
 
 # ==========================================
@@ -4225,8 +4379,56 @@ with tab1:
             show_data_refresh_dialog()
     
     if len(df) == 0:
-        st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**\n\n上級者設定で対象市場（グロース、スタンダード等）にチェックを入れるか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")
-        st.info("💡 **ヒント**: 上級者設定を開いている場合は、サイドバーの『🔒 小型株・原則モードに戻して閉じる』を押すと、ワンタップで原則モード（全126社）に戻せます。")
+        st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**")
+
+        # 条件緩和アシストのシミュレーション実行（0件時に惜しい準本命銘柄を自動検出）
+        active_rules = get_active_condition_rules(is_theme_mode_flag=is_theme_mode)
+        relaxation_results = simulate_single_filter_relaxation(market_filtered_df, active_rules) if len(active_rules) >= 1 else []
+
+        if relaxation_results:
+            st.markdown("""
+            <div style="background-color: #EFF6FF; border: 2px solid #3B82F6; border-radius: 10px; padding: 14px 18px; margin: 12px 0 16px 0;">
+                <div style="font-size: 1.12rem; font-weight: 800; color: #1E3A8A; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    💡 <span>【条件緩和アシスト】 以下の条件を1つ外すと候補銘柄が見つかります：</span>
+                </div>
+                <div style="font-size: 0.90rem; color: #334155; line-height: 1.5;">
+                    現在の地合いや厳格な条件により惜しくも除外された「準本命・お宝候補株」です。気になる条件の<strong>「この条件を外して再検索」</strong>ボタンを押すと、ワンタップで絞り込みを更新できます。
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            for idx, item in enumerate(relaxation_results):
+                r_info = item["rule"]
+                r_cnt = item["count"]
+                r_df = item["df"]
+
+                expander_label = f"▼ 【{r_info['name']}】 を外した場合 ➔ 該当 {r_cnt} 社"
+                with st.expander(expander_label, expanded=(idx == 0)):
+                    col_r1, col_r2 = st.columns([2.2, 3.8])
+                    with col_r1:
+                        if st.button(f"🔓 「{r_info['name']}」 を外して再検索", key=f"btn_relax_{r_info['key']}_{idx}", type="primary", use_container_width=True):
+                            r_info["reset_action"]()
+                            save_current_conditions()
+                            st.toast(f"✨ 「{r_info['name']}」を解除しました！", icon="🎉")
+                            st.rerun()
+                    with col_r2:
+                        st.caption(f"この条件を外すだけで、以下の {r_cnt} 社がすぐに一覧に表示されます。")
+
+                    preview_cols = [
+                        "コード", "銘柄名", "株価(円)", "単元購入額(万円)", "売上高成長率(%)",
+                        "時価総額(億円)", "インサイダー保有率(%)", "チャートトレンド", "財務健全性", "特徴・サービス"
+                    ]
+                    valid_p_cols = [c for c in preview_cols if c in r_df.columns]
+                    st.dataframe(
+                        r_df[valid_p_cols].head(20),
+                        use_container_width=True,
+                        hide_index=True
+                    )
+        else:
+            if len(active_rules) >= 2:
+                st.info("💡 **ヒント**: 現在設定されている複数の厳しい条件が競合して0件になっています。条件を2つ以上解除するか、画面上部・サイドバーの「🔄 全クリア」を押して条件をリセットしてください。")
+            else:
+                st.info("💡 **ヒント**: 上級者設定で対象市場（グロース、スタンダード等）にチェックが入っているか確認するか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")
     else:
         # 銘柄の仕分け判定列を付与（メモがある銘柄には 📝 を付与）
         def get_status_badge(code):

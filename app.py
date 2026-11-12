@@ -2001,13 +2001,36 @@ def save_stock_status(data):
     """銘柄の仕分けステータスをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
     st.session_state.stock_status = data
 
-def set_stock_status(code: str, status: str):
-    """銘柄のステータス（watching / excluded / unreviewed）を更新して即時保存"""
+def set_stock_status(code: str, status: str, watch_price=None, target_price=None, scenario_tag=None):
+    """銘柄のステータス（watching / excluded / unreviewed）および監視情報（開始株価、目標株価、シナリオタグ）を更新して即時保存"""
     code_str = str(code)
     if "stock_status" not in st.session_state:
         st.session_state.stock_status = load_stock_status()
+    
+    existing = st.session_state.stock_status.get(code_str, {})
+    if not isinstance(existing, dict):
+        existing = {}
+        
+    watch_date = existing.get("watch_date")
+    if not watch_date and status == "watching":
+        watch_date = pd.Timestamp.now().strftime("%Y/%m/%d")
+        
+    saved_watch_price = existing.get("watch_price")
+    if saved_watch_price is None and watch_price is not None:
+        try:
+            saved_watch_price = float(watch_price)
+        except Exception:
+            saved_watch_price = None
+            
+    saved_target_price = target_price if target_price is not None else existing.get("target_price")
+    saved_scenario = scenario_tag if scenario_tag is not None else existing.get("scenario_tag", "📉 25日線押し目待ち")
+    
     st.session_state.stock_status[code_str] = {
         "status": status,
+        "watch_date": watch_date or existing.get("updated_at", pd.Timestamp.now().strftime("%Y/%m/%d")),
+        "watch_price": saved_watch_price,
+        "target_price": saved_target_price,
+        "scenario_tag": saved_scenario,
         "updated_at": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M")
     }
     save_stock_status(st.session_state.stock_status)
@@ -3131,7 +3154,9 @@ def render_stock_deep_dive(idx, tab1_df):
             is_watching = (cur_status == "watching")
             watch_label = "✅ ⭐️ 監視中" if is_watching else "⭐️ 監視継続（本命）"
             if st.button(watch_label, key=f"btn_watch_{stock_code}", use_container_width=True, type="primary" if is_watching else "secondary"):
-                set_stock_status(stock_code, "watching")
+                cur_p = stock_data.get('株価(円)', 1000.0)
+                buy_price_guess = float(cur_p) if (pd.notna(cur_p) and cur_p != '-') else 1000.0
+                set_stock_status(stock_code, "watching", watch_price=buy_price_guess)
                 st.toast(f"⭐️ {stock_code} {stock_name} を【監視中の気になる株】に登録しました！", icon="⭐️")
                 st.rerun()
 
@@ -4352,6 +4377,96 @@ def get_quick_entry_signal(row):
 
 
 # ==========================================
+# 🏆 4大プリセット適合診断エンジン（全タブ共通）
+# // MAINTENANCE_REQUIRED: 4大プリセットの基準値を変更する際はここを保守してください
+# ==========================================
+def evaluate_preset_fit(row):
+    """対象銘柄が4大プリセットの各条件をどの程度満たしているか、および合格に必要な残り条件を精密判定する"""
+    mcap = float(row.get("時価総額(億円)", 999.0)) if pd.notna(row.get("時価総額(億円)")) else 999.0
+    rev_g = float(row.get("売上高成長率(%)", -99.0)) if pd.notna(row.get("売上高成長率(%)")) else -99.0
+    insider = float(row.get("インサイダー保有率(%)", 0.0)) if pd.notna(row.get("インサイダー保有率(%)")) else 0.0
+    trend = str(row.get("チャートトレンド", ""))
+    is_up_trend = "上昇トレンド" in trend
+    
+    financial = str(row.get("財務健全性", ""))
+    is_debt_free = ("無借金" in financial or "実質無借金" in financial)
+    
+    per_val = row.get("PER_数値", None)
+    if per_val is None or pd.isna(per_val):
+        per_val = row.get("PER", None)
+    try:
+        per_float = float(per_val) if pd.notna(per_val) else 999.0
+    except Exception:
+        per_float = 999.0
+    is_pe_ok = (per_float <= 40.0)
+    
+    is_dip = (row.get("押し目フラグ") == "押し目買い圏")
+    h_drop = row.get("高値下落率(%)", 0.0)
+    try:
+        h_drop_f = float(h_drop) if pd.notna(h_drop) else 0.0
+    except Exception:
+        h_drop_f = 0.0
+        
+    age_val = row.get("平均年齢_数値", None)
+    try:
+        age_float = float(age_val) if pd.notna(age_val) else 40.0
+    except Exception:
+        age_float = 40.0
+    is_young = (age_float <= 35.0)
+    
+    unit_p = row.get("単元購入額(万円)", 999.0)
+    try:
+        unit_float = float(unit_p) if pd.notna(unit_p) else 999.0
+    except Exception:
+        unit_float = 999.0
+    is_under_10 = (unit_float <= 10.0)
+
+    # ① 👑 王道・集中投資型 (時価<=200, 売上>=20%, インサイダー>=30%, 上昇トレンド, 無借金)
+    endo_missing = []
+    if mcap > 200.0: endo_missing.append(f"時価総額{mcap:,.0f}億 (要200億以下)")
+    if rev_g < 20.0: endo_missing.append(f"売上高成長率{rev_g:+.1f}% (要+20%以上)")
+    if insider < 30.0: endo_missing.append(f"インサイダー{insider:.1f}% (要30%以上・あと{30.0 - insider:.1f}%)")
+    if not is_up_trend: endo_missing.append(f"チャート{trend} (要上昇トレンド)")
+    if not is_debt_free: endo_missing.append("財務 (要実質無借金)")
+    
+    # ② 🛡️ 堅実安全・押し目型 (時価<=300, 売上>=20%, インサイダー>=20%, 上昇トレンド, 無借金, PER<=40, 押し目買い圏)
+    safe_missing = []
+    if mcap > 300.0: safe_missing.append(f"時価総額{mcap:,.0f}億 (要300億以下)")
+    if rev_g < 20.0: safe_missing.append(f"売上高成長率{rev_g:+.1f}% (要+20%以上)")
+    if insider < 20.0: safe_missing.append(f"インサイダー{insider:.1f}% (要20%以上・あと{20.0 - insider:.1f}%)")
+    if not is_up_trend: safe_missing.append(f"チャート{trend} (要上昇トレンド)")
+    if not is_dip: safe_missing.append(f"押し目圏外/下落率{h_drop_f:.1f}% (要押し目圏7〜30%下落)")
+    if not is_pe_ok: safe_missing.append(f"PER{per_float:.1f}倍 (要40倍以下)")
+    if not is_debt_free: safe_missing.append("財務 (要実質無借金)")
+    
+    # ③ 🚀 爆発的テンバガー狙い型 (時価<=200, 売上>=30%, インサイダー>=20%, 上昇トレンド)
+    ten_missing = []
+    if mcap > 200.0: ten_missing.append(f"時価総額{mcap:,.0f}億 (要200億以下)")
+    if rev_g < 30.0: ten_missing.append(f"売上高成長率{rev_g:+.1f}% (要+30%以上・あと{30.0 - rev_g:.1f}%)")
+    if insider < 20.0: ten_missing.append(f"インサイダー{insider:.1f}% (要20%以上・あと{20.0 - insider:.1f}%)")
+    if not is_up_trend: ten_missing.append(f"チャート{trend} (要上昇トレンド)")
+
+    # ④ 🔥 全条件クリア・超お宝型
+    comp_missing = []
+    if mcap > 300.0: comp_missing.append("時価総額 (要300億以下)")
+    if rev_g < 20.0: comp_missing.append("売上高成長率 (要+20%以上)")
+    if insider < 20.0: comp_missing.append("インサイダー (要20%以上)")
+    if not is_up_trend: comp_missing.append("チャート (要上昇トレンド)")
+    if not is_young: comp_missing.append(f"平均年齢{age_float:.1f}歳 (要35歳以下)")
+    if not is_under_10: comp_missing.append(f"単元購入額{unit_float:.1f}万 (要10万以下)")
+    if not is_debt_free: comp_missing.append("財務 (要無借金)")
+    if not is_pe_ok: comp_missing.append("PER (要40倍以下)")
+    if not is_dip: comp_missing.append("押し目 (要押し目圏内)")
+
+    return {
+        "endo": (len(endo_missing) == 0, endo_missing),
+        "safe": (len(safe_missing) == 0, safe_missing),
+        "ten": (len(ten_missing) == 0, ten_missing),
+        "comp": (len(comp_missing) == 0, comp_missing)
+    }
+
+
+# ==========================================
 # アプリ最上部ナビゲーションタブ（主要2タブに厳選）
 # ==========================================
 tab1, tab2 = st.tabs([
@@ -4857,13 +4972,96 @@ with tab2:
 
         if "監視中の気になる株" in subtab_mode:
             st.markdown(f"#### 👀 監視中の気になる株・本命候補 ({watch_cnt}社)")
-            st.caption("スクリーニングから「⭐️ 監視継続」に選定した本命銘柄群です。買い場（押し目や好決算の初動）が訪れて実際に購入した際は、各カードの**「🎯 購入した（保有株へ登録）」**から約定単価と株数を入力して保有株ポートフォリオへ昇格移動できます。")
+            st.caption("スクリーニングから選定した本命銘柄群です。買い場（押し目や決算後の初動）を待ち伏せし、実際に購入した際は**「💰 購入した」**から保有株へ昇格移動できます。")
 
             if watch_cnt == 0:
                 st.info("💡 現在、監視中の銘柄はありません。タブ1の銘柄一覧・詳細分析画面で「⭐️ 監視継続（本命）」を押すとここに追加されます。")
             else:
+                # ==========================================
+                # 📊 【アイディア3】監視銘柄の並び替え（ソートセレクター）
+                # ==========================================
+                sort_col1, sort_col2 = st.columns([3.0, 2.0])
+                with sort_col1:
+                    watch_sort_choice = st.selectbox(
+                        "📊 監視リストの並び替え:",
+                        options=[
+                            "🎯 買い場接近順（高値下落率・押し目順）",
+                            "📅 決算発表日が近い順",
+                            "📈 監視後騰落率順（値上がり順）",
+                            "📉 監視後騰落率順（値下がり・押し目順）",
+                            "🕒 登録が新しい順"
+                        ],
+                        key="watch_list_sort_select",
+                        label_visibility="collapsed"
+                    )
+                with sort_col2:
+                    st.caption(f"現在の監視銘柄: 全 **{watch_cnt} 社**")
+
+                # ソート用データの事前集計
+                watch_meta_list = []
                 for c_code in watching_codes:
                     row_m = raw_df[raw_df["コード"].astype(str) == str(c_code)]
+                    s_info = current_status_dict.get(str(c_code), {})
+                    
+                    if not row_m.empty:
+                        r_val = row_m.iloc[0]
+                        cur_p_val = float(r_val.get("株価(円)", 0)) if (pd.notna(r_val.get("株価(円)")) and r_val.get("株価(円)") != '-') else 0.0
+                        h_drop_val = float(r_val.get("高値下落率(%)", 0.0)) if pd.notna(r_val.get("高値下落率(%)")) else 0.0
+                        e_date_raw = r_val.get("決算予定日_生値", r_val.get("直近決算日", "-"))
+                    else:
+                        r_val = {}
+                        cur_p_val = 0.0
+                        h_drop_val = 0.0
+                        e_date_raw = "-"
+
+                    w_price = s_info.get("watch_price")
+                    if w_price is None and cur_p_val > 0:
+                        w_price = cur_p_val
+                        # バックフィル保存
+                        set_stock_status(c_code, "watching", watch_price=w_price)
+
+                    pnl_since_watch = round(((cur_p_val - w_price) / w_price) * 100, 2) if (w_price and w_price > 0 and cur_p_val > 0) else 0.0
+                    _, _, days_left = parse_earnings_alert(e_date_raw)
+                    reg_date = s_info.get("watch_date") or s_info.get("updated_at", "")
+
+                    watch_meta_list.append({
+                        "code": c_code,
+                        "row_m": row_m,
+                        "r_val": r_val,
+                        "s_info": s_info,
+                        "cur_p": cur_p_val,
+                        "h_drop": h_drop_val,
+                        "w_price": w_price,
+                        "pnl_since_watch": pnl_since_watch,
+                        "days_left": days_left if days_left is not None else 99999,
+                        "reg_date": reg_date
+                    })
+
+                # ソート適用
+                if "買い場接近順" in watch_sort_choice:
+                    watch_meta_list.sort(key=lambda x: x["h_drop"], reverse=True)
+                elif "決算発表日が近い順" in watch_sort_choice:
+                    watch_meta_list.sort(key=lambda x: x["days_left"])
+                elif "値上がり順" in watch_sort_choice:
+                    watch_meta_list.sort(key=lambda x: x["pnl_since_watch"], reverse=True)
+                elif "値下がり" in watch_sort_choice:
+                    watch_meta_list.sort(key=lambda x: x["pnl_since_watch"])
+                elif "新しい順" in watch_sort_choice:
+                    watch_meta_list.sort(key=lambda x: str(x["reg_date"]), reverse=True)
+
+                # アクティブな条件一覧の取得（フィルター合否判定用）
+                active_rules_for_check = get_active_condition_rules(is_theme_mode_flag=is_theme_mode)
+
+                for meta in watch_meta_list:
+                    c_code = meta["code"]
+                    row_m = meta["row_m"]
+                    r_val = meta["r_val"]
+                    s_info = meta["s_info"]
+                    cur_p_val = meta["cur_p"]
+                    w_price = meta["w_price"]
+                    pnl_since_watch = meta["pnl_since_watch"]
+                    days_left = meta["days_left"]
+
                     if row_m.empty:
                         s_name = "不明"
                         s_market = "-"
@@ -4876,7 +5074,6 @@ with tab2:
                         s_high_drop = None
                         s_signal = "-"
                     else:
-                        r_val = row_m.iloc[0]
                         s_name = r_val.get("銘柄名", "不明")
                         s_market = r_val.get("市場", "-")
                         s_price = r_val.get("株価(円)", "-")
@@ -4888,30 +5085,76 @@ with tab2:
                         s_high_drop = r_val.get("高値下落率(%)", None)
                         s_signal = get_quick_entry_signal(r_val)
 
-                    # 登録されているメモ
+                    # 監視メタデータ（登録日、目標株価、シナリオタグ）
+                    watch_date_str = s_info.get("watch_date") or str(s_info.get("updated_at", ""))[:10] or "記録済"
+                    target_p = s_info.get("target_price", None)
+                    scenario_tag = s_info.get("scenario_tag", "📉 25日線押し目待ち")
                     note_text = st.session_state.get("stock_notes", {}).get(str(c_code), {}).get("note", "").strip()
 
                     with st.container(border=True):
-                        # 上段：銘柄名、コード、市場、詳細ボタン
-                        head_col1, head_col2 = st.columns([3.5, 1.5])
+                        # ==========================================
+                        # 1. ヘッダー行：銘柄名、コード、市場、登録日、シナリオタグ、詳細ボタン
+                        # ==========================================
+                        head_col1, head_col2 = st.columns([3.8, 1.2])
                         with head_col1:
-                            st.markdown(f"##### ⭐️ **{c_code} {s_name}** `({s_market})`")
+                            tag_color = "#3B82F6" if "押し目" in scenario_tag else ("#10B981" if "ブレイク" in scenario_tag else "#F59E0B")
+                            st.markdown(f"""
+                            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                                <span style="font-size: 1.15rem; font-weight: 800; color: #1E3A8A;">⭐️ {c_code} {s_name}</span>
+                                <span style="font-size: 0.82rem; color: #64748B;">({s_market})</span>
+                                <span style="font-size: 0.76rem; color: #94A3B8; background-color: #F1F5F9; padding: 2px 6px; border-radius: 4px;">🕒 {watch_date_str} 登録</span>
+                                <span style="font-size: 0.76rem; color: #FFFFFF; background-color: {tag_color}; padding: 2px 8px; border-radius: 10px; font-weight: 700;">{scenario_tag}</span>
+                            </div>
+                            """, unsafe_allow_html=True)
                         with head_col2:
                             if st.button("🔍 詳細を見る", key=f"view_w_{c_code}", use_container_width=True, type="primary"):
                                 st.session_state.tab2_selected_code = str(c_code)
                                 st.rerun()
 
-                        # 中段：主要4指標（株価、売上成長率、時価総額、チャート状況）
+                        # ==========================================
+                        # 2. 主要4指標（現在株価＋監視時株価・騰落率、売上成長率、時価総額、チャート状況）
+                        # ==========================================
                         m1, m2, m3, m4 = st.columns(4)
                         price_display = f"{s_price:,.0f} 円" if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else f"{s_price} 円"
                         m1.metric("現在株価", price_display)
+                        
                         growth_display = f"{s_growth:+.1f} %" if (isinstance(s_growth, (int, float)) and pd.notna(s_growth)) else f"{s_growth} %"
                         m2.metric("売上高成長率", growth_display)
                         mcap_display = f"{s_mcap:,.0f} 億円" if (isinstance(s_mcap, (int, float)) and pd.notna(s_mcap)) else f"{s_mcap} 億円"
                         m3.metric("時価総額", mcap_display)
                         m4.metric("チャート状況", f"{s_trend}")
 
-                        # チャートトレンド ＆ エントリー判定 ＆ 決算日の一体型ステータスバー
+                        # 監視開始時株価 ＆ 騰落率のサブ表示
+                        if w_price and w_price > 0:
+                            pnl_color = "#16A34A" if pnl_since_watch > 0 else ("#DC2626" if pnl_since_watch < 0 else "#64748B")
+                            pnl_sign = "+" if pnl_since_watch > 0 else ""
+                            st.markdown(f"""
+                            <div style="font-size: 0.78rem; color: #64748B; margin-top: -8px; margin-bottom: 6px;">
+                                📍 監視開始時株価: <strong>{w_price:,.0f} 円</strong> ｜ 監視後騰落: <strong style="color: {pnl_color}; font-size: 0.84rem;">{pnl_sign}{pnl_since_watch:.2f} %</strong>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        # ==========================================
+                        # 3. 【アイディア1】目標株価アラート ＆ 【アイディア2】決算直前カウントダウン
+                        # ==========================================
+                        # 決算カウントダウン（7日以内は赤色、14日以内は黄色）
+                        if days_left != 99999 and days_left >= 0:
+                            if days_left <= 7:
+                                st.error(f"🚨 **【決算直前カウントダウン】 あと {days_left} 日** ({s_earnings} 予定 ➔ 決算ギャンブル飛びつき厳禁！発表後の初動を確認)")
+                            elif days_left <= 14:
+                                st.warning(f"⚠️ **【決算接近】 あと {days_left} 日** ({s_earnings} 予定)")
+
+                        # 目標買付株価アラート
+                        if target_p and target_p > 0 and cur_p_val > 0:
+                            diff_t = round(((cur_p_val - target_p) / target_p) * 100, 1)
+                            if cur_p_val <= target_p:
+                                st.success(f"🎯 **【買い場到達！】** 目標買付株価 {target_p:,.0f} 円 に到達しました！（現在値: {cur_p_val:,.0f} 円 ➔ 指値・押し目ルールに従い打診買い検討）")
+                            elif abs(diff_t) <= 5.0:
+                                st.info(f"🎯 **【買い場接近中！】** 目標買付株価: {target_p:,.0f} 円 ➔ 現在値: {cur_p_val:,.0f} 円（あと **{diff_t:+.1f} %** で買い場到達） 🟢接近シグナル点灯")
+                            else:
+                                st.caption(f"🎯 買い目標株価: **{target_p:,.0f} 円** ｜ 現在値との乖離: あと **{diff_t:+.1f} %**")
+
+                        # チャートトレンド ＆ エントリー現在地
                         drop_str = f"（高値から {float(s_high_drop):.1f}% 下落）" if (pd.notna(s_high_drop) and isinstance(s_high_drop, (int, float))) else ""
                         st.markdown(f"""
                         <div style="background-color: #F8FAFC; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 6px 12px; margin: 4px 0 10px 0; font-size: 0.83rem; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; line-height: 1.4;">
@@ -4921,23 +5164,115 @@ with tab2:
                         </div>
                         """, unsafe_allow_html=True)
 
+                        # ==========================================
+                        # 4. 🎯 条件クリア判定（現在のフィルターとの適合度・ピルバッジ ＆ 判定結果）
+                        # ==========================================
+                        if not row_m.empty:
+                            passed_badges = []
+                            failed_badges = []
+                            
+                            for r_rule in active_rules_for_check:
+                                try:
+                                    is_match = r_rule["condition_fn"](row_m)
+                                    if hasattr(is_match, "any") and is_match.any():
+                                        passed_badges.append(r_rule["name"])
+                                    elif bool(is_match):
+                                        passed_badges.append(r_rule["name"])
+                                    else:
+                                        failed_badges.append(r_rule["name"])
+                                except Exception:
+                                    pass
+
+                            badges_html = []
+                            for p_name in passed_badges:
+                                clean_name = p_name.replace("のみ", "").replace("以上", "").strip()
+                                badges_html.append(f'<span style="display: inline-block; background-color: #ECFDF5; color: #065F46; border: 1px solid #A7F3D0; padding: 2px 8px; border-radius: 6px; font-weight: 700; font-size: 0.78rem; margin: 2px 3px;">✅ {clean_name}</span>')
+                            for f_name in failed_badges:
+                                badges_html.append(f'<span style="display: inline-block; background-color: #FEF2F2; color: #991B1B; border: 1px solid #FECACA; padding: 2px 8px; border-radius: 6px; font-weight: 800; font-size: 0.78rem; margin: 2px 3px;">❌ {f_name}</span>')
+
+                            if not failed_badges:
+                                result_text = '<span style="color: #16A34A; font-weight: 800;">👉 判定結果: 🟢 全条件クリア！現在のメイン絞り込み一覧に表示されています</span>'
+                            else:
+                                failed_summary = "、".join([f"【{fn.replace('のみ', '').strip()}】" for fn in failed_badges])
+                                result_text = f'<span style="color: #DC2626; font-weight: 800;">👉 判定結果: {failed_summary} で現在の絞り込みから脱落中</span>'
+
+                            st.markdown(f"""
+                            <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px; padding: 8px 12px; margin: 6px 0 10px 0;">
+                                <div style="font-size: 0.82rem; font-weight: 700; color: #334155; margin-bottom: 4px;">
+                                    🎯 条件クリア判定（現在のフィルターとの適合度）:
+                                </div>
+                                <div style="margin-bottom: 4px;">
+                                    {"".join(badges_html) if badges_html else '<span style="font-size: 0.80rem; color: #94A3B8;">（現在適用中のフィルターなし）</span>'}
+                                </div>
+                                <div style="font-size: 0.80rem; line-height: 1.4;">
+                                    {result_text}
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+
+                        # ==========================================
+                        # 5. 🏆 4大プリセット適合診断（折りたたみアコーディオン）
+                        # ==========================================
+                        if not row_m.empty:
+                            with st.expander("🏆 4大プリセット適合診断（あと何をクリアすれば合格できるか確認）", expanded=False):
+                                fit_res = evaluate_preset_fit(r_val)
+                                
+                                # ① 王道型
+                                ok_endo, miss_endo = fit_res["endo"]
+                                endo_txt = "🟢 **合格！条件クリア済**" if ok_endo else f"⚠️ あと{len(miss_endo)}条件: " + "、".join([f"❌ {m}" for m in miss_endo])
+                                st.markdown(f"・**👑 王道・集中投資型**: {endo_txt}")
+                                
+                                # ② 押し目型
+                                ok_safe, miss_safe = fit_res["safe"]
+                                safe_txt = "🟢 **合格！条件クリア済**" if ok_safe else f"⚠️ あと{len(miss_safe)}条件: " + "、".join([f"❌ {m}" for m in miss_safe])
+                                st.markdown(f"・**🛡️ 堅実安全・押し目型**: {safe_txt}")
+                                
+                                # ③ テンバガー型
+                                ok_ten, miss_ten = fit_res["ten"]
+                                ten_txt = "🟢 **合格！条件クリア済**" if ok_ten else f"⚠️ あと{len(miss_ten)}条件: " + "、".join([f"❌ {m}" for m in miss_ten])
+                                st.markdown(f"・**🚀 爆発的テンバガー狙い型**: {ten_txt}")
+                                
+                                # ④ 超お宝型
+                                ok_comp, miss_comp = fit_res["comp"]
+                                comp_txt = "🟢 **合格！条件クリア済**" if ok_comp else f"❌ あと{len(miss_comp)}条件: " + "、".join([f"❌ {m}" for m in miss_comp])
+                                st.markdown(f"・**🔥 全条件クリア・超お宝型**: {comp_txt}")
+
                         if s_business and s_business != "-":
                             st.caption(f"🏢 **事業内容**: {s_business}")
-                        
-                        # 📝 メモ等は一覧表示時はデフォルトで折りたたんで隠す
-                        if note_text:
-                            with st.expander("📝 登録メモ・投資戦略を確認", expanded=False):
-                                st.info(note_text)
 
-                        # 下段：購入昇格フォーム ＆ 監視解除ボタン
-                        act_col1, act_col2 = st.columns([2.5, 1.0])
-                        with act_col1:
-                            with st.expander("🎯 購入した（保有株リストへ昇格登録）", expanded=False):
-                                default_buy_p = float(s_price) if (isinstance(s_price, (int, float)) and pd.notna(s_price)) else 1000.0
-                                buy_in_p = st.number_input(f"購入単価 (円)", min_value=1.0, value=default_buy_p, step=10.0, key=f"buy_p_{c_code}")
+                        # ==========================================
+                        # 6. 下段アクションバー（メモ、目標・シナリオ設定、購入登録、解除の横並び集約）
+                        # ==========================================
+                        act_c1, act_c2, act_c3, act_c4 = st.columns([1.2, 1.4, 1.4, 1.0])
+                        with act_c1:
+                            with st.expander("📝 メモ確認", expanded=False):
+                                st.info(note_text if note_text else "マイメモはまだ登録されていません。「詳細を見る」からいつでも追加・編集できます。")
+
+                        with act_c2:
+                            with st.expander("🎯 目標・シナリオ設定", expanded=False):
+                                cur_target = float(target_p) if (target_p and target_p > 0) else (cur_p_val if cur_p_val > 0 else 1000.0)
+                                new_target = st.number_input(f"買い目標株価 (円)", min_value=1.0, value=cur_target, step=10.0, key=f"inp_target_{c_code}")
+                                
+                                scenario_options = [
+                                    "📉 25日線押し目待ち",
+                                    "🚀 高値ブレイク待ち",
+                                    "📊 好決算の初動待ち",
+                                    "💎 じっくり長期待ち"
+                                ]
+                                cur_scen_idx = scenario_options.index(scenario_tag) if scenario_tag in scenario_options else 0
+                                new_scenario = st.selectbox("買い場シナリオタグ:", options=scenario_options, index=cur_scen_idx, key=f"sel_scen_{c_code}")
+                                
+                                if st.button("💾 目標・シナリオを保存", key=f"btn_save_target_{c_code}", type="primary", use_container_width=True):
+                                    set_stock_status(c_code, "watching", watch_price=w_price, target_price=new_target, scenario_tag=new_scenario)
+                                    st.toast(f"🎯 {c_code} の目標株価・シナリオを保存しました！", icon="✨")
+                                    st.rerun()
+
+                        with act_c3:
+                            with st.expander("💰 購入した（保有へ昇格）", expanded=False):
+                                default_buy_p = cur_p_val if cur_p_val > 0 else 1000.0
+                                buy_in_p = st.number_input(f"約定単価 (円)", min_value=1.0, value=default_buy_p, step=10.0, key=f"buy_p_{c_code}")
                                 buy_in_s = st.number_input(f"保有株数 (株)", min_value=100, value=100, step=100, key=f"buy_s_{c_code}")
-                                if st.button(f"💰 保有株として確定登録", key=f"btn_confirm_buy_{c_code}", type="primary", use_container_width=True):
-                                    # 既に保有リストにあるかチェック
+                                if st.button(f"確定登録", key=f"btn_confirm_buy_{c_code}", type="primary", use_container_width=True):
                                     existing = next((item for item in st.session_state.my_watchlist if str(item.get("code")) == str(c_code)), None)
                                     if existing:
                                         existing["buy_price"] = buy_in_p
@@ -4952,8 +5287,8 @@ with tab2:
                                     st.toast(f"🎉 {c_code} {s_name} を保有株リストに登録しました！", icon="💰")
                                     st.rerun()
 
-                        with act_col2:
-                            if st.button("🗑️ 監視解除", key=f"del_watch_{c_code}", use_container_width=True):
+                        with act_c4:
+                            if st.button("🗑️ 解除", key=f"del_watch_{c_code}", use_container_width=True):
                                 set_stock_status(c_code, "unreviewed")
                                 st.toast(f"⭐️ {c_code} {s_name} の監視を解除しました。")
                                 st.rerun()

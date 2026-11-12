@@ -13,3 +13,6 @@ ENV/
 # OS generated
 .DS_Store
 Thumbs.db
+
+# User dynamic data
+user_data/

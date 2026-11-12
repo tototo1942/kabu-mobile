@@ -48,6 +48,8 @@ except ImportError:
 
 # 実行環境に依存しない動的パス解決（PC移行・ユーザー変更に完全対応）
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+USER_DATA_DIR = os.path.join(BASE_DIR, "user_data")
+os.makedirs(USER_DATA_DIR, exist_ok=True)
 CSV_FILE = os.path.join(BASE_DIR, "growth_stocks.csv")
 THEME_STOCKS_CACHE_FILE = os.path.join(BASE_DIR, "theme_stocks_cache.csv")
 SETTINGS_FILE = os.path.join(BASE_DIR, "search_conditions.json")
@@ -1985,21 +1987,70 @@ def save_current_conditions():
 
 
 # ==========================================
-# 銘柄仕分けステータス＆ウォッチリストの保存・読み込み関数
+# 🌐 ハイブリッド型マルチユーザーデータ分離 ＆ 永続化エンジン
+# // MAINTENANCE_REQUIRED: ユーザー分離・個別ファイルパス生成ロジックはここを保守してください
 # ==========================================
+import uuid
+
+def get_current_user_id() -> str:
+    """現在のアクティブユーザーID（マイ合言葉）を取得・生成"""
+    # 1. URLクエリパラメータ(?uid=xxx)からの取得
+    query_uid = st.query_params.get("uid")
+    if query_uid:
+        clean_uid = re.sub(r"[^a-zA-Z0-9_\-]", "", str(query_uid))[:32]
+        if clean_uid:
+            st.session_state["user_id"] = clean_uid
+            return clean_uid
+            
+    # 2. セッションステートからの取得
+    if "user_id" in st.session_state and st.session_state["user_id"]:
+        return st.session_state["user_id"]
+        
+    # 3. 新規自動発行 (例: u_a1b2c3d4)
+    new_uid = f"u_{uuid.uuid4().hex[:8]}"
+    st.session_state["user_id"] = new_uid
+    try:
+        st.query_params["uid"] = new_uid
+    except Exception:
+        pass
+    return new_uid
+
+def get_user_file_path(prefix: str) -> str:
+    """ユーザーごとの独立したJSONファイルパスを安全に生成"""
+    uid = get_current_user_id()
+    clean_uid = re.sub(r"[^a-zA-Z0-9_\-]", "", uid)[:32] or "default"
+    os.makedirs(USER_DATA_DIR, exist_ok=True)
+    return os.path.join(USER_DATA_DIR, f"{prefix}_{clean_uid}.json")
+
 def load_stock_status():
-    """銘柄の仕分けステータス（watching, excluded, unreviewed）を読み込む"""
+    """銘柄の仕分けステータスをユーザー個別ファイルから読み込む"""
+    user_file = get_user_file_path("stock_status")
+    if os.path.exists(user_file):
+        try:
+            with open(user_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    # ユーザー固有ファイルが存在しない初回は、ベーステンプレートから安全に初期シード作成
     if os.path.exists(STATUS_FILE):
         try:
             with open(STATUS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                seed_data = json.load(f)
+                save_stock_status(seed_data)
+                return seed_data
         except Exception:
             pass
     return {}
 
 def save_stock_status(data):
-    """銘柄の仕分けステータスをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    """銘柄の仕分けステータスをユーザー個別ファイルへ永続保存"""
     st.session_state.stock_status = data
+    user_file = get_user_file_path("stock_status")
+    try:
+        with open(user_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 def set_stock_status(code: str, status: str, watch_price=None, target_price=None, scenario_tag="__UNSET__"):
     """銘柄のステータス（watching / excluded / unreviewed）および監視情報（開始株価、目標株価、シナリオタグ）を更新して即時保存"""
@@ -2041,32 +2092,62 @@ def set_stock_status(code: str, status: str, watch_price=None, target_price=None
     save_stock_status(st.session_state.stock_status)
 
 def load_watchlist():
-    """タブ2のウォッチリスト銘柄を読み込む"""
+    """保有株リストをユーザー個別ファイルから読み込む"""
+    user_file = get_user_file_path("watchlist")
+    if os.path.exists(user_file):
+        try:
+            with open(user_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
     if os.path.exists(WATCHLIST_FILE):
         try:
             with open(WATCHLIST_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                seed_data = json.load(f)
+                save_watchlist(seed_data)
+                return seed_data
         except Exception:
             pass
     return []
 
 def save_watchlist(data):
-    """タブ2のウォッチリスト銘柄をセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    """保有株リストをユーザー個別ファイルへ永続保存"""
     st.session_state.my_watchlist = data
+    user_file = get_user_file_path("watchlist")
+    try:
+        with open(user_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 def load_stock_notes():
-    """銘柄の投資メモ＆AIレポートデータを読み込む"""
+    """投資メモをユーザー個別ファイルから読み込む"""
+    user_file = get_user_file_path("stock_notes")
+    if os.path.exists(user_file):
+        try:
+            with open(user_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
     if os.path.exists(NOTES_FILE):
         try:
             with open(NOTES_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                seed_data = json.load(f)
+                save_stock_notes(seed_data)
+                return seed_data
         except Exception:
             pass
     return {}
 
 def save_stock_notes(data):
-    """銘柄の投資メモ＆AIレポートデータをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
+    """投資メモをユーザー個別ファイルへ永続保存"""
     st.session_state.stock_notes = data
+    user_file = get_user_file_path("stock_notes")
+    try:
+        with open(user_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 def save_stock_note_entry(code: str, note_text: str):
     """指定銘柄のメモと現在日時を更新して保存"""
@@ -2079,6 +2160,35 @@ def save_stock_note_entry(code: str, note_text: str):
     }
     save_stock_notes(st.session_state.stock_notes)
 
+
+# ==========================================
+# 🌐 ブラウザLocalStorage ＆ ユーザーID自動永続化ブリッジ
+# ==========================================
+cur_active_uid = get_current_user_id()
+st.components.v1.html(f"""
+<script>
+(function() {{
+    try {{
+        const url = new URL(window.parent.location.href);
+        const queryUid = url.searchParams.get('uid');
+        const storedUid = window.localStorage.getItem('tototo_user_uid');
+
+        if (!queryUid && storedUid) {{
+            // URLにuidがない場合、ブラウザ記憶のIDを自動付与してマイリストを完全復元！
+            url.searchParams.set('uid', storedUid);
+            window.parent.location.replace(url.toString());
+        }} else if (queryUid) {{
+            // URLにuidがある場合、次回のためにブラウザLocalStorageへ記憶！
+            window.localStorage.setItem('tototo_user_uid', queryUid);
+        }} else if ('{cur_active_uid}') {{
+            window.localStorage.setItem('tototo_user_uid', '{cur_active_uid}');
+        }}
+    }} catch (e) {{
+        // cross-origin ignore
+    }}
+}})();
+</script>
+""", height=0, width=0)
 
 # ==========================================
 # セッション状態の初期化
@@ -4962,6 +5072,30 @@ with tab2:
         hold_cnt = len(st.session_state.get("my_watchlist", []))
 
         st.markdown("### 💼 ポートフォリオ ＆ 銘柄ウォッチ管理")
+
+        # 🔑 マイ合言葉・端末同期設定（他端末での同期やID引き継ぎ）
+        with st.expander(f"🔑 マイ合言葉・端末間同期 （現在のユーザーID: {cur_active_uid}）", expanded=False):
+            st.markdown("##### 📱 複数端末（スマホとPC）でのデータ同期")
+            st.caption("あなた専用の監視リストと保有株は、ブラウザのキャッシュ（LocalStorage）と個別の保存ファイルに安全に保護されています。ブラウザを閉じても消えることはありません。")
+            st.code(f"現在のマイ合言葉: {cur_active_uid}", language=None)
+            
+            sync_col1, sync_col2 = st.columns([3.2, 1.2])
+            with sync_col1:
+                sync_input_val = st.text_input("別の端末の合言葉を入力して切り替え:", value="", placeholder="例: u_a1b2c3d4", key="inp_sync_switch_uid")
+            with sync_col2:
+                st.write("")
+                st.write("")
+                if st.button("🔄 同期切替", key="btn_apply_sync_uid", use_container_width=True):
+                    cleaned_sync_uid = re.sub(r"[^a-zA-Z0-9_\-]", "", sync_input_val).strip()
+                    if cleaned_sync_uid:
+                        st.session_state["user_id"] = cleaned_sync_uid
+                        st.query_params["uid"] = cleaned_sync_uid
+                        # 新しいIDのデータを即時ロード
+                        st.session_state.stock_status = load_stock_status()
+                        st.session_state.my_watchlist = load_watchlist()
+                        st.session_state.stock_notes = load_stock_notes()
+                        st.toast(f"✨ 合言葉を【{cleaned_sync_uid}】に切り替えました！", icon="🎉")
+                        st.rerun()
 
         # サブタブ切り替えラジオスイッチ
         subtab_mode = st.radio(

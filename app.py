@@ -2001,7 +2001,7 @@ def save_stock_status(data):
     """銘柄の仕分けステータスをセッションに安全保存（他端末と完全独立・覗き見改ざん遮断）"""
     st.session_state.stock_status = data
 
-def set_stock_status(code: str, status: str, watch_price=None, target_price=None, scenario_tag=None):
+def set_stock_status(code: str, status: str, watch_price=None, target_price=None, scenario_tag="__UNSET__"):
     """銘柄のステータス（watching / excluded / unreviewed）および監視情報（開始株価、目標株価、シナリオタグ）を更新して即時保存"""
     code_str = str(code)
     if "stock_status" not in st.session_state:
@@ -2023,7 +2023,12 @@ def set_stock_status(code: str, status: str, watch_price=None, target_price=None
             saved_watch_price = None
             
     saved_target_price = target_price if target_price is not None else existing.get("target_price")
-    saved_scenario = scenario_tag if scenario_tag is not None else existing.get("scenario_tag", "📉 25日線押し目待ち")
+    
+    # scenario_tag の更新処理：引数に明示的に None が渡された場合は未設定クリア、__UNSET__ なら既存維持
+    if scenario_tag == "__UNSET__":
+        saved_scenario = existing.get("scenario_tag", None)
+    else:
+        saved_scenario = scenario_tag
     
     st.session_state.stock_status[code_str] = {
         "status": status,
@@ -5088,7 +5093,9 @@ with tab2:
                     # 監視メタデータ（登録日、目標株価、シナリオタグ）
                     watch_date_str = s_info.get("watch_date") or str(s_info.get("updated_at", ""))[:10] or "記録済"
                     target_p = s_info.get("target_price", None)
-                    scenario_tag = s_info.get("scenario_tag", "📉 25日線押し目待ち")
+                    raw_scen = s_info.get("scenario_tag", None)
+                    # 初期値の未設定化（未設定または空文字は None）
+                    scenario_tag = None if (not raw_scen or raw_scen in ["🏷️ 未設定", "未設定"]) else str(raw_scen).strip()
                     note_text = st.session_state.get("stock_notes", {}).get(str(c_code), {}).get("note", "").strip()
 
                     with st.container(border=True):
@@ -5097,13 +5104,18 @@ with tab2:
                         # ==========================================
                         head_col1, head_col2 = st.columns([3.8, 1.2])
                         with head_col1:
-                            tag_color = "#3B82F6" if "押し目" in scenario_tag else ("#10B981" if "ブレイク" in scenario_tag else "#F59E0B")
+                            if scenario_tag:
+                                tag_color = "#EC4899" if "目標" in scenario_tag else ("#3B82F6" if "押し目" in scenario_tag else ("#10B981" if "ブレイク" in scenario_tag else ("#8B5CF6" if "決算" in scenario_tag else "#F59E0B")))
+                                tag_badge_html = f'<span style="font-size: 0.76rem; color: #FFFFFF; background-color: {tag_color}; padding: 2px 8px; border-radius: 10px; font-weight: 700;">{scenario_tag}</span>'
+                            else:
+                                tag_badge_html = '<span style="font-size: 0.74rem; color: #94A3B8; background-color: #F8FAFC; border: 1px dashed #CBD5E1; padding: 2px 6px; border-radius: 4px;">🏷️ 未設定</span>'
+
                             st.markdown(f"""
                             <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
                                 <span style="font-size: 1.15rem; font-weight: 800; color: #1E3A8A;">⭐️ {c_code} {s_name}</span>
                                 <span style="font-size: 0.82rem; color: #64748B;">({s_market})</span>
                                 <span style="font-size: 0.76rem; color: #94A3B8; background-color: #F1F5F9; padding: 2px 6px; border-radius: 4px;">🕒 {watch_date_str} 登録</span>
-                                <span style="font-size: 0.76rem; color: #FFFFFF; background-color: {tag_color}; padding: 2px 8px; border-radius: 10px; font-weight: 700;">{scenario_tag}</span>
+                                {tag_badge_html}
                             </div>
                             """, unsafe_allow_html=True)
                         with head_col2:
@@ -5253,17 +5265,47 @@ with tab2:
                                 cur_target = float(target_p) if (target_p and target_p > 0) else (cur_p_val if cur_p_val > 0 else 1000.0)
                                 new_target = st.number_input(f"買い目標株価 (円)", min_value=1.0, value=cur_target, step=10.0, key=f"inp_target_{c_code}")
                                 
-                                scenario_options = [
+                                scenario_presets = [
+                                    "🏷️ 未設定（シナリオなし）",
+                                    "🎯 目標株価待ち（指値まで引きつけ）",
                                     "📉 25日線押し目待ち",
-                                    "🚀 高値ブレイク待ち",
-                                    "📊 好決算の初動待ち",
-                                    "💎 じっくり長期待ち"
+                                    "🚀 直近高値ブレイク待ち",
+                                    "📊 次回決算待ち（好決算初動）",
+                                    "⏳ トレンド転換待ち（底打ち確認）",
+                                    "👀 様子見・定点観測",
+                                    "✏️ 自由入力（手動記述）..."
                                 ]
-                                cur_scen_idx = scenario_options.index(scenario_tag) if scenario_tag in scenario_options else 0
-                                new_scenario = st.selectbox("買い場シナリオタグ:", options=scenario_options, index=cur_scen_idx, key=f"sel_scen_{c_code}")
+                                
+                                # 現在設定されているタグの判定
+                                is_custom_tag = bool(scenario_tag and scenario_tag not in scenario_presets and scenario_tag != "🏷️ 未設定")
+                                if is_custom_tag:
+                                    scen_display_options = [f"✏️ {scenario_tag}"] + scenario_presets
+                                    default_scen_idx = 0
+                                elif scenario_tag in scenario_presets:
+                                    scen_display_options = scenario_presets
+                                    default_scen_idx = scenario_presets.index(scenario_tag)
+                                else:
+                                    scen_display_options = scenario_presets
+                                    default_scen_idx = 0
+
+                                chosen_scen = st.selectbox("買い場シナリオタグ:", options=scen_display_options, index=default_scen_idx, key=f"sel_scen_{c_code}")
+                                
+                                custom_tag_input = ""
+                                if "自由入力" in chosen_scen or is_custom_tag:
+                                    default_custom_val = scenario_tag.replace("✏️", "").strip() if is_custom_tag else ""
+                                    custom_tag_input = st.text_input("自由記述タグ (全角15文字以内):", value=default_custom_val, max_chars=15, key=f"txt_custom_{c_code}", placeholder="例: 4500円反発待ち")
                                 
                                 if st.button("💾 目標・シナリオを保存", key=f"btn_save_target_{c_code}", type="primary", use_container_width=True):
-                                    set_stock_status(c_code, "watching", watch_price=w_price, target_price=new_target, scenario_tag=new_scenario)
+                                    if "自由入力" in chosen_scen:
+                                        final_scen_val = f"✏️ {custom_tag_input.strip()}" if custom_tag_input.strip() else None
+                                    elif is_custom_tag and chosen_scen == scen_display_options[0]:
+                                        final_scen_val = f"✏️ {custom_tag_input.strip()}" if custom_tag_input.strip() else f"✏️ {scenario_tag.replace('✏️', '').strip()}"
+                                    elif "未設定" in chosen_scen:
+                                        final_scen_val = None
+                                    else:
+                                        final_scen_val = chosen_scen
+                                        
+                                    set_stock_status(c_code, "watching", watch_price=w_price, target_price=new_target, scenario_tag=final_scen_val)
                                     st.toast(f"🎯 {c_code} の目標株価・シナリオを保存しました！", icon="✨")
                                     st.rerun()
 

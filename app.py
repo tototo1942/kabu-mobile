@@ -1144,7 +1144,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     # 判定ロジック（優先度順・一覧テーブルと完全統一）
     if is_falling_sharply:
         return {
-            "status": "🔴 ⚠️ 落ちるナイフ / 下降中",
+            "status": "🔴【手出し厳禁】下降トレンド（落ちるナイフ）",
             "badge_color": "#DC2626",
             "bg_color": "#FEF2F2",
             "border_color": "#F87171",
@@ -1157,7 +1157,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     elif (high_dist is not None and high_dist <= 3.0) or (ma25_bias is not None and ma25_bias >= 15.0):
         reason = "直近高値（レジスタンス）直前" if (high_dist is not None and high_dist <= 3.0) else f"25日線から乖離過熱 (+{ma25_bias}%)"
         return {
-            "status": "🟡 ⏳ 押し目待ち（過熱・高値圏）",
+            "status": "🟡【今は待て】高値過熱（押し目待ち）",
             "badge_color": "#D97706",
             "bg_color": "#FFFBEB",
             "border_color": "#FCD34D",
@@ -1169,7 +1169,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     
     elif high_dist is not None and high_dist <= 0.5 and (ma25_bias is not None and ma25_bias < 15.0):
         return {
-            "status": "🔵 🚀 高値ブレイク（上昇圏）",
+            "status": "🔵【順張り好機】高値ブレイク上昇圏",
             "badge_color": "#2563EB",
             "bg_color": "#EFF6FF",
             "border_color": "#93C5FD",
@@ -1181,7 +1181,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     
     elif (sma25 and latest_close >= sma25) and (ma25_bias is not None and 0.0 <= ma25_bias <= 7.0) and (high_dist is not None and high_dist >= 6.0):
         return {
-            "status": "🟢 🎯 押し目買い好機（25日線上）",
+            "status": "🟢【今が好機】押し目買い圏（25日線上）",
             "badge_color": "#16A34A",
             "bg_color": "#F0FDF4",
             "border_color": "#86EFAC",
@@ -1193,7 +1193,7 @@ def analyze_entry_timing(code: str, high_drop_val=None):
     
     else:
         return {
-            "status": "⚪ ⏳ 深押し（25日線越え待ち）",
+            "status": "⚪【今は待て】深押し調整（25日線回復待ち）",
             "badge_color": "#475569",
             "bg_color": "#F8FAFC",
             "border_color": "#CBD5E1",
@@ -1915,11 +1915,11 @@ def load_data():
 # 検索条件の保存・読み込み関数 (前回設定の自動復元)
 # ==========================================
 def load_saved_conditions():
-    """保存された検索条件を読み込む（起動・更新時は上級者設定を自動解除し、常に小型株・原則モードで初期化）"""
+    """保存された検索条件を読み込む（起動・更新時は初期値・全フィルター解除状態で初期化）"""
     defaults = {
         "mcap_max": 300.0,
-        "rev_growth_min": 20.0,
-        "insider_min": 20.0,
+        "rev_growth_min": 10.0,
+        "insider_min": 0.0,
         "filter_trend_up": False,
         "filter_young_age": False,
         "filter_debt_free": False,
@@ -1930,13 +1930,13 @@ def load_saved_conditions():
         "filter_under_10man": False,
         "market_growth": True,
         "market_standard": True,
-        "market_prime": False,
-        "market_regional": False,
-        "market_pro_other": False,
+        "market_prime": True,
+        "market_regional": True,
+        "market_pro_other": True,
         "show_conditions": True,
         "keyword": "",
         "selected_genres": [],
-        "active_preset": None
+        "active_preset": "📋 初期値（デフォルト・全フィルター解除）"
     }
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -1948,9 +1948,9 @@ def load_saved_conditions():
                 defaults["mcap_max"] = 300.0
                 defaults["market_growth"] = True
                 defaults["market_standard"] = True
-                defaults["market_prime"] = False
-                defaults["market_regional"] = False
-                defaults["market_pro_other"] = False
+                defaults["market_prime"] = True
+                defaults["market_regional"] = True
+                defaults["market_pro_other"] = True
         except Exception:
             pass
     return defaults
@@ -2311,9 +2311,9 @@ def clear_all_filters():
     st.session_state.market_pro_other = True
     st.session_state.keyword_input = ""
     st.session_state.selected_genres = []
-    st.session_state.active_preset = None
+    st.session_state.active_preset = "📋 初期値（デフォルト・全フィルター解除）"
     save_current_conditions()
-    st.toast("🔄 フィルター条件をすべてクリアしました。『↩️ 取消』で復元できます。", icon="✨")
+    st.toast("🔄 フィルター条件を初期値（全フィルター解除・全社表示）に戻しました。『↩️ 取消』で復元できます。", icon="✨")
 
 def undo_clear_filters():
     """退避したフィルター条件スナップショットを復元する"""
@@ -2369,7 +2369,7 @@ else:
 
 def set_preset_endo_standard():
     """① 👑 王道・集中投資型 (約10〜20社)"""
-    st.session_state.active_preset = "👑 王道・集中投資型 【本命★5】"
+    st.session_state.active_preset = "👑 ① 王道・集中投資型 【本命★5】"
     st.session_state.mcap_max = 200.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 30.0
@@ -2388,11 +2388,11 @@ def set_preset_endo_standard():
     st.session_state.market_pro_other = False
     st.session_state.selected_stock_idx = None
     save_current_conditions()
-    st.toast("👑 王道・集中投資型 (理想の5大条件) を適用しました！", icon="✨")
+    st.toast("👑 ① 王道・集中投資型 (理想の5大条件) を適用しました！", icon="✨")
 
 def set_preset_safe_dip():
     """② 🛡️ 堅実安全・押し目買い型 (約15〜25社)"""
-    st.session_state.active_preset = "🛡️ 堅実安全・押し目型 【安全★4】"
+    st.session_state.active_preset = "🛡️ ② 堅実安全・押し目型 【安全★4】"
     st.session_state.mcap_max = 300.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 20.0
@@ -2411,11 +2411,11 @@ def set_preset_safe_dip():
     st.session_state.market_pro_other = False
     st.session_state.selected_stock_idx = None
     save_current_conditions()
-    st.toast("🛡️ 堅実安全・押し目買い型 (無借金×適正PER×押し目) を適用しました！", icon="🛡️")
+    st.toast("🛡️ ② 堅実安全・押し目買い型 (無借金×適正PER×押し目) を適用しました！", icon="🛡️")
 
 def set_preset_tenbagger():
     """③ 🚀 爆発的テンバガー狙い型 (約10〜15社)"""
-    st.session_state.active_preset = "🚀 爆発的テンバガー狙い型 【急成長★4.5】"
+    st.session_state.active_preset = "🚀 ③ 爆発的テンバガー狙い型 【急成長★4.5】"
     st.session_state.mcap_max = 200.0
     st.session_state.rev_growth_min = 30.0
     st.session_state.insider_min = 20.0
@@ -2434,11 +2434,11 @@ def set_preset_tenbagger():
     st.session_state.market_pro_other = False
     st.session_state.selected_stock_idx = None
     save_current_conditions()
-    st.toast("🚀 爆発的テンバガー狙い型 (売上+30%×3年後2倍) を適用しました！", icon="🚀")
+    st.toast("🚀 ③ 爆発的テンバガー狙い型 (売上+30%×3年後2倍) を適用しました！", icon="🚀")
 
 def set_preset_full_comp():
-    """④ 🔥 全条件クリア・超お宝型 (1社〜極少数)"""
-    st.session_state.active_preset = "🔥 全条件クリア・超お宝型 【究極★6】"
+    """④ 🔥 全条件制覇・超お宝型 (1社〜極少数)"""
+    st.session_state.active_preset = "🔥 ④ 全条件制覇・超お宝型 【究極★6】"
     st.session_state.mcap_max = 300.0
     st.session_state.rev_growth_min = 20.0
     st.session_state.insider_min = 20.0
@@ -2457,7 +2457,126 @@ def set_preset_full_comp():
     st.session_state.market_pro_other = False
     st.session_state.selected_stock_idx = None
     save_current_conditions()
-    st.toast("🔥 全条件クリア・超お宝型 (11条件フルコンプ) を適用しました！", icon="🔥")
+    st.toast("🔥 ④ 全条件制覇・超お宝型 (11条件フルコンプ) を適用しました！", icon="🔥")
+
+
+# ==========================================
+# 🎯 5大プリセット（初期値＋4大プリセット）自動判定・プルダウン切替
+# // MAINTENANCE_REQUIRED: プリセット選択肢や初期値の判定基準を変更する際はここを保守してください
+# ==========================================
+PRESET_OPTIONS = [
+    "📋 初期値（デフォルト・全フィルター解除）",
+    "👑 ① 王道・集中投資型 【本命★5】",
+    "🛡️ ② 堅実安全・押し目型 【安全★4】",
+    "🚀 ③ 爆発的テンバガー狙い型 【急成長★4.5】",
+    "🔥 ④ 全条件制覇・超お宝型 【究極★6】"
+]
+CUSTOM_PRESET_LABEL = "⚙️ カスタム設定（個別条件調整中）"
+
+
+def detect_current_preset_mode():
+    """現在のセッション状態から、5つの基本プリセットまたはカスタム設定を自動判定する"""
+    kw = str(st.session_state.get("keyword_input", "")).strip()
+    genres = list(st.session_state.get("selected_genres", []))
+    is_adv = bool(st.session_state.get("unlocked_advanced_market", False))
+    mcap = float(st.session_state.get("mcap_max", 300.0))
+
+    if kw or genres or (is_adv and mcap > 300.0):
+        return CUSTOM_PRESET_LABEL
+
+    rev = float(st.session_state.get("rev_growth_min", 10.0))
+    ins = float(st.session_state.get("insider_min", 0.0))
+    f_trend = bool(st.session_state.get("filter_trend_up", False))
+    f_young = bool(st.session_state.get("filter_young_age", False))
+    f_debt = bool(st.session_state.get("filter_debt_free", False))
+    f_pe = bool(st.session_state.get("filter_pe_max", False))
+    f_dip = bool(st.session_state.get("filter_dip", False))
+    f_high = bool(st.session_state.get("filter_high_growth", False))
+    f_ten = bool(st.session_state.get("filter_tenbagger", False))
+    f_u10 = bool(st.session_state.get("filter_under_10man", False))
+
+    # 初期値（デフォルト・全フィルター解除）
+    if (
+        mcap == 300.0
+        and rev <= 10.0
+        and ins == 0.0
+        and not any([f_trend, f_young, f_debt, f_pe, f_dip, f_high, f_ten, f_u10])
+    ):
+        return "📋 初期値（デフォルト・全フィルター解除）"
+
+    # ① 王道・集中投資型
+    if (
+        mcap == 200.0
+        and rev == 20.0
+        and ins == 30.0
+        and f_trend
+        and not f_young
+        and f_debt
+        and not f_pe
+        and not f_dip
+        and not f_high
+        and not f_ten
+        and not f_u10
+    ):
+        return "👑 ① 王道・集中投資型 【本命★5】"
+
+    # ② 堅実安全・押し目型
+    if (
+        mcap == 300.0
+        and rev == 20.0
+        and ins == 20.0
+        and f_trend
+        and not f_young
+        and f_debt
+        and f_pe
+        and f_dip
+        and not f_high
+        and not f_ten
+        and not f_u10
+    ):
+        return "🛡️ ② 堅実安全・押し目型 【安全★4】"
+
+    # ③ 爆発的テンバガー狙い型
+    if (
+        mcap == 200.0
+        and rev == 30.0
+        and ins == 20.0
+        and f_trend
+        and not f_young
+        and not f_debt
+        and not f_pe
+        and not f_dip
+        and f_high
+        and f_ten
+        and not f_u10
+    ):
+        return "🚀 ③ 爆発的テンバガー狙い型 【急成長★4.5】"
+
+    # ④ 全条件制覇・超お宝型
+    if (
+        mcap == 300.0
+        and rev == 20.0
+        and ins == 20.0
+        and all([f_trend, f_young, f_debt, f_pe, f_dip, f_high, f_ten, f_u10])
+    ):
+        return "🔥 ④ 全条件制覇・超お宝型 【究極★6】"
+
+    return CUSTOM_PRESET_LABEL
+
+
+def on_preset_dropdown_change():
+    """適用プリセット欄のプルダウン変更時に各フィルター条件を即時適用する"""
+    chosen = st.session_state.get("main_preset_dropdown_selector")
+    if chosen == "📋 初期値（デフォルト・全フィルター解除）":
+        clear_all_filters()
+    elif chosen == "👑 ① 王道・集中投資型 【本命★5】":
+        set_preset_endo_standard()
+    elif chosen == "🛡️ ② 堅実安全・押し目型 【安全★4】":
+        set_preset_safe_dip()
+    elif chosen == "🚀 ③ 爆発的テンバガー狙い型 【急成長★4.5】":
+        set_preset_tenbagger()
+    elif chosen == "🔥 ④ 全条件制覇・超お宝型 【究極★6】":
+        set_preset_full_comp()
 
 
 # ==========================================
@@ -2478,7 +2597,7 @@ if hasattr(st, "dialog"):
             st.caption("投資スタイルに合わせてワンクリックで抽出します。")
             p_c1, p_c2 = st.columns(2)
             with p_c1:
-                if st.button("🔥 全条件クリア 【究極★6】", use_container_width=True, help="11個の全条件を妥協なく全クリした奇跡の超お宝銘柄"):
+                if st.button("🔥 全条件制覇 【究極★6】", use_container_width=True, help="11個の全条件を妥協なく全クリした奇跡の超お宝銘柄"):
                     set_preset_full_comp()
                     st.rerun()
                 if st.button("👑 王道・集中投資型 【本命★5】", use_container_width=True, help="書籍推奨の理想5大条件。最も再現性が高い本命厳選パターン"):
@@ -2622,7 +2741,7 @@ with st.sidebar.container(border=True):
     st.markdown("### 🎯 目的別おすすめパターン")
     st.caption("投資スタイルと厳格度（★4〜★6）に合わせてワンクリックで抽出します。")
 
-    if st.button("🔥 全条件クリア 【究極★6】 (1社〜)", use_container_width=True, help="【厳格度: ★★★★★★】11個の全条件を妥協なく100点満点で全クリした奇跡の超お宝銘柄"):
+    if st.button("🔥 全条件制覇 【究極★6】 (1社〜)", use_container_width=True, help="【厳格度: ★★★★★★】11個の全条件を妥協なく100点満点で全クリした奇跡の超お宝銘柄"):
         set_preset_full_comp()
         st.rerun()
 
@@ -3968,7 +4087,7 @@ def show_guide_dialog():
                     ① プリセットで一発スクリーニング
                 </div>
                 <div style="font-size: 0.85rem; color: #334155; line-height: 1.45;">
-                    サイドバーの「👑 ①王道・集中投資型」や「🔥 全条件クリア」を押すだけで、書籍の理想条件（売上+20%以上、社長大株主、時価総額200億円以下など）を満たすお宝候補銘柄が即座に絞り込まれます。
+                    サイドバーの「👑 ①王道・集中投資型」や「🔥 ④ 全条件制覇・超お宝型」を押すだけで、書籍の理想条件（売上+20%以上、社長大株主、時価総額200億円以下など）を満たすお宝候補銘柄が即座に絞り込まれます。
                 </div>
             </div>
             <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
@@ -4152,7 +4271,7 @@ def show_method_dialog():
   </thead>
   <tbody>
     <tr style="background: #FFFBEB;">
-      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #B45309;">🔥 全条件クリア・超お宝型</td>
+      <td style="padding: 10px 12px; border: 1px solid #E2E8F0; font-weight: 700; color: #B45309;">🔥 ④ 全条件制覇・超お宝型</td>
       <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 800; color: #D97706;">★★★★★★<br><span style="font-size:0.75rem; color:#475569;">(究極・奇跡のフルコンプ)</span></td>
       <td style="padding: 10px 12px; border: 1px solid #E2E8F0; text-align: center; font-weight: 700; color: #1E293B;">1社〜数社<br><span style="font-size:0.75rem; color:#64748B;">(時期により0社)</span></td>
       <td style="padding: 10px 12px; border: 1px solid #E2E8F0; line-height: 1.45; color: #1E293B;"><strong>全11条件を100点満点で全クリした奇跡の銘柄</strong>。<br><span style="font-size:0.82rem; color:#475569;">（時価総額・急成長・社長大株主・若手社員・無借金・割安PER・押し目・上昇トレンド・10万円以下など全て合致）。<br>書籍でも<em>「全てを満たす会社は滅多に出ないが、見つけたら人生が変わるレベルのお宝」</em>とされる極限の絞り込みです。</span></td>
@@ -4637,27 +4756,27 @@ def get_quick_entry_signal(row):
     trend = str(row.get("チャートトレンド", ""))
     
     if "下降トレンド" in trend:
-        return "🔴 ⚠️ 落ちるナイフ / 下降中"
+        return "🔴【手出し厳禁】下降トレンド（落ちるナイフ）"
     
     if pd.notna(high_drop):
         try:
             h_val = float(high_drop)
             if h_val <= 3.0:
-                return "🟡 ⏳ 押し目待ち（過熱・高値圏）"
+                return "🟡【今は待て】高値過熱（押し目待ち）"
             elif 3.0 < h_val <= 6.0:
-                return "🔵 🚀 高値ブレイク（上昇圏）"
+                return "🔵【順張り好機】高値ブレイク上昇圏"
             elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
-                return "🟢 🎯 押し目買い好機（25日線上）"
+                return "🟢【今が好機】押し目買い圏（25日線上）"
             elif 18.0 < h_val < 35.0:
-                return "⚪ ⏳ 深押し（25日線越え待ち）"
+                return "⚪【今は待て】深押し調整（25日線回復待ち）"
             elif h_val >= 35.0:
-                return "🟣 🔄 リバウンド途上（警戒）"
+                return "🟣【警戒・様子見】大底からのリバウンド途上"
         except Exception:
             pass
     
     if "上昇トレンド" in trend:
-        return "🟢 🎯 押し目買い好機（25日線上）"
-    return "⚪ ⏳ 深押し（25日線越え待ち）"
+        return "🟢【今が好機】押し目買い圏（25日線上）"
+    return "⚪【今は待て】深押し調整（25日線回復待ち）"
 
 
 # ==========================================
@@ -4730,7 +4849,7 @@ def evaluate_preset_fit(row):
     if insider < 20.0: ten_missing.append(f"インサイダー{insider:.1f}% (要20%以上・あと{20.0 - insider:.1f}%)")
     if not is_up_trend: ten_missing.append(f"チャート{trend} (要上昇トレンド)")
 
-    # ④ 🔥 全条件クリア・超お宝型
+    # ④ 🔥 全条件制覇・超お宝型
     comp_missing = []
     if mcap > 300.0: comp_missing.append("時価総額 (要300億以下)")
     if rev_g < 20.0: comp_missing.append("売上高成長率 (要+20%以上)")
@@ -4810,32 +4929,47 @@ with tab1:
             show_data_refresh_dialog()
 
     # ==========================================
-    # 🎯 適用中プリセット ＆ フィルター条件バッジ一体型サマリーカード
+    # 🎯 適用中プリセット（5種プルダウン切替） ＆ フィルター条件バッジ一体型サマリーカード
     # ==========================================
-    current_preset_label = st.session_state.get("active_preset", None)
-    if current_preset_label:
-        preset_badge_html = f'<span style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); color: #1D4ED8; border: 1.5px solid #3B82F6; padding: 3px 10px; border-radius: 6px; font-weight: 800; font-size: 0.90rem;">{current_preset_label}</span>'
+    current_preset_label = detect_current_preset_mode()
+    st.session_state.active_preset = current_preset_label
+
+    if current_preset_label == CUSTOM_PRESET_LABEL:
+        preset_dropdown_options = [CUSTOM_PRESET_LABEL] + PRESET_OPTIONS
     else:
-        preset_badge_html = '<span style="background-color: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;">⚙️ カスタム設定</span>'
+        preset_dropdown_options = PRESET_OPTIONS
+
+    st.session_state["main_preset_dropdown_selector"] = current_preset_label
 
     tags_html = "".join([f'<span class="filter-tag" style="display: inline-block; background-color: #DBEAFE; color: #1E40AF; border: 1px solid #93C5FD; padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 0.82rem; margin: 2px 4px;">{f}</span>' for f in active_filters])
 
-    st.markdown(f"""
-    <div style="background-color: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 10px; padding: 10px 14px; margin: 10px 0 14px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.04);">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
-            <div style="font-size: 0.92rem; font-weight: 700; color: #1E3A8A; display: flex; align-items: center; gap: 6px;">
-                <span>🎯 適用プリセット:</span> {preset_badge_html}
+    with st.container(border=True):
+        ps_col1, ps_col2 = st.columns([2.2, 1.2])
+        with ps_col1:
+            st.markdown(
+                '<div style="font-size: 0.90rem; font-weight: 800; color: #1E3A8A; margin-bottom: 4px;">🎯 適用プリセット（ワンタップ切替）:</div>',
+                unsafe_allow_html=True
+            )
+            st.selectbox(
+                label="🎯 適用プリセット:",
+                options=preset_dropdown_options,
+                key="main_preset_dropdown_selector",
+                on_change=on_preset_dropdown_change,
+                label_visibility="collapsed"
+            )
+        with ps_col2:
+            st.markdown(f"""
+            <div style="background-color: #EFF6FF; border: 1.5px solid #93C5FD; border-radius: 8px; padding: 8px 12px; text-align: center; font-size: 0.92rem; font-weight: 800; color: #1D4ED8;">
+                👉 該当: <strong style="font-size: 1.08rem;">{len(df)}社</strong> / {base_population_label}
             </div>
-            <div style="font-size: 0.88rem; font-weight: 700; color: #1D4ED8;">
-                👉 該当: <strong>{len(df)}社</strong> / {base_population_label}
-            </div>
-        </div>
-        <div style="font-size: 0.82rem; color: #475569; line-height: 1.6;">
+            """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div style="font-size: 0.82rem; color: #475569; line-height: 1.6; margin-top: 6px;">
             <span style="font-weight: 700; color: #334155;">【適用中の条件】:</span>
             {tags_html if tags_html else '<span style="color: #94A3B8;">なし（全社表示）</span>'}
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
     
     if len(df) == 0:
         st.warning("⚠️ **現在の絞り込み条件に一致する銘柄がありません（0件）。**")
@@ -4873,15 +5007,22 @@ with tab1:
                     with col_r2:
                         st.caption(f"この条件を外すだけで、以下の {r_cnt} 社がすぐに一覧に表示されます。")
 
+                    r_df_display = r_df.head(20).copy()
+                    r_df_display["エントリー判定"] = r_df_display.apply(get_quick_entry_signal, axis=1)
+
                     preview_cols = [
-                        "コード", "銘柄名", "株価(円)", "単元購入額(万円)", "売上高成長率(%)",
-                        "時価総額(億円)", "インサイダー保有率(%)", "チャートトレンド", "財務健全性", "特徴・サービス"
+                        "エントリー判定", "コード", "銘柄名", "株価(円)", "単元購入額(万円)", "直近決算日",
+                        "売上高成長率(%)", "時価総額(億円)", "インサイダー保有率(%)", "高値下落率(%)",
+                        "財務健全性", "特徴・サービス"
                     ]
-                    valid_p_cols = [c for c in preview_cols if c in r_df.columns]
+                    valid_p_cols = [c for c in preview_cols if c in r_df_display.columns]
                     st.dataframe(
-                        r_df[valid_p_cols].head(20),
+                        r_df_display[valid_p_cols],
                         use_container_width=True,
-                        hide_index=True
+                        hide_index=True,
+                        column_config={
+                            "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium")
+                        }
                     )
         else:
             if len(active_rules) >= 2:
@@ -5081,7 +5222,7 @@ with tab1:
         # エントリー判定の優先順位スコア関数（好機先頭、高値ブレイク、高値圏、深押し、下降の順）
         def calc_entry_score(val):
             s = str(val)
-            if "押し目買い好機" in s:
+            if "今が好機" in s or "押し目買い好機" in s or "押し目買い圏" in s:
                 return 1
             if "高値ブレイク" in s:
                 return 2
@@ -5091,7 +5232,7 @@ with tab1:
                 return 4
             if "リバウンド" in s:
                 return 5
-            if "落ちるナイフ" in s or "下降" in s:
+            if "落ちるナイフ" in s or "下降" in s or "手出し厳禁" in s:
                 return 6
             return 7
 
@@ -5103,7 +5244,7 @@ with tab1:
                 tab1_df = tab1_df.sort_values(by="時価総額(億円)", ascending=True)
         elif "【押し目買い】" in selected_smart_view:
             if "エントリー判定" in tab1_df.columns:
-                tab1_df = tab1_df[tab1_df["エントリー判定"].astype(str).str.contains("押し目買い好機", na=False)].copy()
+                tab1_df = tab1_df[tab1_df["エントリー判定"].astype(str).str.contains("今が好機|押し目買い好機|押し目買い圏", na=False)].copy()
             if "高値下落率(%)" in tab1_df.columns:
                 tab1_df = tab1_df.sort_values(by="高値下落率(%)", ascending=False)
         elif "【超急成長】" in selected_smart_view:
@@ -5138,7 +5279,7 @@ with tab1:
 
         table_column_config = {
             "仕分け": st.column_config.TextColumn("仕分け判定", width="small", help="⭐️監視中 / ❌対象外 / ⚪未判定"),
-            "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium", help="🎯押し目買い好機 / ⏳高値警戒(待ち) / 🟣リバウンド途上 / 🔴下降調整中"),
+            "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium", help="【今の行動判断＋現在のチャート位置】🟢【今が好機】押し目買い圏 / 🔵【順張り好機】高値ブレイク / 🟡【今は待て】高値過熱(押し目待ち) / ⚪【今は待て】深押し(25日線回復待ち) / 🟣【警戒・様子見】リバウンド途上 / 🔴【手出し厳禁】下降トレンド"),
             "コード": st.column_config.TextColumn("コード", width="small", help="証券コード（行選択でワンタップコピー可能）"),
             "銘柄名_リンク": st.column_config.LinkColumn(
                 "銘柄名 (Yahooへ)",
@@ -5659,7 +5800,7 @@ with tab2:
                                 # ④ 超お宝型
                                 ok_comp, miss_comp = fit_res["comp"]
                                 comp_txt = "🟢 **合格！条件クリア済**" if ok_comp else f"❌ あと{len(miss_comp)}条件: " + "、".join([f"❌ {m}" for m in miss_comp])
-                                st.markdown(f"・**🔥 全条件クリア・超お宝型**: {comp_txt}")
+                                st.markdown(f"・**🔥 ④ 全条件制覇・超お宝型**: {comp_txt}")
 
                         if s_business and s_business != "-":
                             st.caption(f"🏢 **事業内容**: {s_business}")

@@ -3614,7 +3614,7 @@ def render_stock_deep_dive(idx, tab1_df):
         if change_info:
             change_badge_html = f'<div style="background-color: #FEF9C3; border: 1.5px solid #EAB308; color: #854D0E; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">⚡ 最新チャートにより判定を更新しました（一覧時: {change_info["old"]} ➔ 最新: {change_info["new"]}）</div>'
 
-        st.markdown(f"""
+        entry_card_raw = f"""
         <div style="background-color: {timing_info['bg_color']}; border: 2px solid {timing_info['border_color']}; border-radius: 10px; padding: 14px 18px; margin-top: 12px; margin-bottom: 16px;">
             {change_badge_html}
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
@@ -3633,7 +3633,8 @@ def render_stock_deep_dive(idx, tab1_df):
                 <span>🎯 直近高値までの距離: <strong style="color: {'#DC2626' if (timing_info['high_dist'] is not None and timing_info['high_dist'] <= 3.0) else '#1E3A8A'};">{f"あと {timing_info['high_dist']:.1f} %" if timing_info['high_dist'] is not None else "-"}</strong> (レジスタンス直前: 3%以内)</span>
             </div>
         </div>
-        """, unsafe_allow_html=True)
+        """
+        st.markdown("\n".join(line.strip() for line in entry_card_raw.splitlines() if line.strip()), unsafe_allow_html=True)
         
         # 特徴・サービス
         st.success(f"**【特徴・主力サービス (四季報要約)】**: {stock_data.get('特徴・サービス', '情報なし')}")

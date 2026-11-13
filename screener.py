@@ -160,10 +160,12 @@ def inspect_single_stock(stock_meta):
         if revenue_growth is None or revenue_growth < MIN_REVENUE_GROWTH:
             return None
 
-        # 3. 株価履歴から上場時期 ＆ チャートトレンド判定
+        # 3. 株価履歴から上場時期 ＆ チャートトレンド判定 ＆ 乖離率・急落フラグ
         ipo_date_str = "不明"
         ipo_years = None
         trend_status = "保ち合い 🔄"
+        ma25_bias = None
+        is_falling_sharply = False
         try:
             hist = ticker.history(period="6mo")
             if not hist.empty:
@@ -175,10 +177,20 @@ def inspect_single_stock(stock_meta):
                 if ipo_years > MAX_IPO_YEARS:
                     return None
 
+                # 直近5営業日のプライスアクション（連続下落・急落判定）
+                recent_closes = hist['Close'].tail(5).tolist()
+                if len(recent_closes) >= 3:
+                    consecutive_drops = all(recent_closes[i] > recent_closes[i+1] for i in range(len(recent_closes)-1)[-2:])
+                    five_day_drop = (recent_closes[-1] - recent_closes[0]) / recent_closes[0] * 100
+                    if (consecutive_drops and five_day_drop <= -5.0) or (five_day_drop <= -9.0):
+                        is_falling_sharply = True
+
                 if len(hist) >= 25:
                     hist['SMA25'] = hist['Close'].rolling(window=25).mean()
                     latest_close = hist['Close'].iloc[-1]
                     latest_sma25 = hist['SMA25'].iloc[-1]
+                    if pd.notna(latest_sma25) and latest_sma25 > 0:
+                        ma25_bias = round(((latest_close - latest_sma25) / latest_sma25) * 100, 1)
 
                     if len(hist) >= 75:
                         hist['SMA75'] = hist['Close'].rolling(window=75).mean()
@@ -278,6 +290,8 @@ def inspect_single_stock(stock_meta):
             "財務健全性": debt_status,
             "PER": round(forward_pe, 1) if forward_pe else "-",
             "高値下落率(%)": high_drop_pct if high_drop_pct is not None else "-",
+            "25日線乖離率(%)": ma25_bias if ma25_bias is not None else "-",  # // MAINTENANCE_REQUIRED: 一覧判定の精度向上用指標
+            "直近急落フラグ": is_falling_sharply,
             "押し目フラグ": "押し目買い圏" if is_dip_buy else "適正/高値圏",
             "3年後想定倍率": f"{growth_multiplier}倍",
             "上場時期": ipo_date_str,

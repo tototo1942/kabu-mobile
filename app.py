@@ -3607,16 +3607,20 @@ def render_stock_deep_dive(idx, tab1_df):
                 st.info("💡 調査後にボタンで仕分け")
 
         # --- 📊 FX視点のエントリー現在地 ＆ 過熱感メーター ---
-        high_drop_val = stock_data.get('高値下落率(%)', None)
-        timing_info = analyze_entry_timing(stock_code, high_drop_val)
-        
-        # リアルタイム診断結果を一覧テーブル側へも即時キャッシュ同期
-        if "stock_entry_cache" not in st.session_state:
-            st.session_state.stock_entry_cache = {}
-        st.session_state.stock_entry_cache[str(stock_code).strip()] = timing_info["status"]
-        
+        timing_info = sync_live_entry_cache(stock_code, stock_data)
+        c_key_str = str(stock_code).strip()
+        change_info = st.session_state.get("stock_entry_changed_cache", {}).get(c_key_str)
+        change_badge_html = ""
+        if change_info:
+            change_badge_html = f"""
+            <div style="background-color: #FEF9C3; border: 1.5px solid #EAB308; color: #854D0E; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">
+                ⚡ 最新チャートにより判定を更新しました（一覧時: {change_info['old']} ➔ 最新: {change_info['new']}）
+            </div>
+            """
+
         st.markdown(f"""
         <div style="background-color: {timing_info['bg_color']}; border: 2px solid {timing_info['border_color']}; border-radius: 10px; padding: 14px 18px; margin-top: 12px; margin-bottom: 16px;">
+            {change_badge_html}
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px;">
                 <div style="font-size: 1.05rem; font-weight: 800; color: {timing_info['badge_color']};">
                     📈 エントリー現在地診断 (FX目線): {timing_info['status']}
@@ -4763,35 +4767,101 @@ def show_terms_dialog():
 # FX目線での統合売買・エントリー判定関数（全タブ共通）
 # // MAINTENANCE_REQUIRED: テクニカル判定基準を更新する際はここを保守してください
 # ==========================================
-def get_quick_entry_signal(row):
-    c_str = str(row.get("コード", "")).strip()
-    if "stock_entry_cache" in st.session_state and c_str in st.session_state.stock_entry_cache:
-        return st.session_state.stock_entry_cache[c_str]
+# // MAINTENANCE_REQUIRED: 一覧側（CSV）のエントリー判定基準・注記・変更アイコン点灯ロジックを変更する際はここを保守してください
+def get_csv_entry_signal(row):
+    """CSV保存データのみを用いて、一覧用のエントリー判定を高速に算出する（新列がある場合は詳細と同等ロジックを適用）"""
     high_drop = row.get("高値下落率(%)", None)
     trend = str(row.get("チャートトレンド", ""))
-    
+    raw_falling = row.get("直近急落フラグ", None)
+    raw_ma25_bias = row.get("25日線乖離率(%)", None)
+
+    # ② 新列「直近急落フラグ」がある場合は詳細画面と同一優先度で「落ちるナイフ」を即時判定
+    if raw_falling is True or str(raw_falling).strip().lower() == "true":
+        return "🔴【手出し厳禁】下降トレンド（落ちるナイフ）"
+
     if "下降トレンド" in trend:
         return "🔴【手出し厳禁】下降トレンド（落ちるナイフ）"
-    
-    if pd.notna(high_drop):
+
+    h_val = None
+    if pd.notna(high_drop) and str(high_drop).strip() not in ("", "-"):
         try:
             h_val = float(high_drop)
-            if h_val <= 3.0:
-                return "🟡【今は待て】高値過熱（押し目待ち）"
-            elif 3.0 < h_val <= 6.0:
-                return "🔵【順張り好機】高値ブレイク上昇圏"
-            elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
-                return "🟢【今が好機】押し目買い圏（25日線上）"
-            elif 18.0 < h_val < 35.0:
-                return "⚪【今は待て】深押し調整（25日線回復待ち）"
-            elif h_val >= 35.0:
-                return "🟣【警戒・様子見】大底からのリバウンド途上"
         except Exception:
-            pass
-    
+            h_val = None
+
+    ma25_val = None
+    if pd.notna(raw_ma25_bias) and str(raw_ma25_bias).strip() not in ("", "-"):
+        try:
+            ma25_val = float(raw_ma25_bias)
+        except Exception:
+            ma25_val = None
+
+    # ② 新列「25日線乖離率(%)」がある場合は詳細画面と同一ロジックで精密判定
+    if ma25_val is not None:
+        if (h_val is not None and h_val <= 3.0) or ma25_val >= 15.0:
+            return "🟡【今は待て】高値過熱（押し目待ち）"
+        elif h_val is not None and h_val <= 0.5 and ma25_val < 15.0:
+            return "🔵【順張り好機】高値ブレイク上昇圏"
+        elif (0.0 <= ma25_val <= 7.0) and (h_val is not None and h_val >= 6.0):
+            return "🟢【今が好機】押し目買い圏（25日線上）"
+        elif h_val is not None and h_val >= 35.0:
+            return "🟣【警戒・様子見】大底からのリバウンド途上"
+        return "⚪【今は待て】深押し調整（25日線回復待ち）"
+
+    # ① フォールバック：旧CSVフォーマット時の簡易判定（下落が大きい非上昇トレンド銘柄には注記を表示）
+    if h_val is not None:
+        if h_val <= 3.0:
+            return "🟡【今は待て】高値過熱（押し目待ち）"
+        elif 3.0 < h_val <= 6.0:
+            return "🔵【順張り好機】高値ブレイク上昇圏"
+        elif 6.0 < h_val <= 18.0 and "上昇トレンド" in trend:
+            return "🟢【今が好機】押し目買い圏（25日線上）"
+        elif 18.0 < h_val < 35.0:
+            if "上昇トレンド" not in trend:
+                return "⚪【今は待て】深押し調整（※急落要確認）"
+            return "⚪【今は待て】深押し調整（25日線回復待ち）"
+        elif h_val >= 35.0:
+            return "🟣【警戒・様子見】大底からのリバウンド途上"
+
     if "上昇トレンド" in trend:
         return "🟢【今が好機】押し目買い圏（25日線上）"
     return "⚪【今は待て】深押し調整（25日線回復待ち）"
+
+
+def get_quick_entry_signal(row):
+    """一覧表示用：詳細画面でリアルタイム更新された場合は⚡アイコンを点灯させ、未更新時はCSV判定を返す"""
+    c_str = str(row.get("コード", "")).strip()
+    if "stock_entry_cache" in st.session_state and c_str in st.session_state.stock_entry_cache:
+        live_status = st.session_state.stock_entry_cache[c_str]
+        if "stock_entry_changed_cache" in st.session_state and c_str in st.session_state.stock_entry_changed_cache:
+            return f"⚡{live_status}"
+        return live_status
+    return get_csv_entry_signal(row)
+
+
+def sync_live_entry_cache(stock_code, stock_row):
+    """選択銘柄のリアルタイム精密判定を実行し、一覧側との差分（変更検知）をキャッシュへ同期する"""
+    c_str = str(stock_code).strip()
+    high_drop_val = stock_row.get("高値下落率(%)", None)
+    timing_info = analyze_entry_timing(c_str, high_drop_val)
+    if "stock_entry_cache" not in st.session_state:
+        st.session_state.stock_entry_cache = {}
+    if "stock_entry_changed_cache" not in st.session_state:
+        st.session_state.stock_entry_changed_cache = {}
+
+    live_status = timing_info["status"]
+    st.session_state.stock_entry_cache[c_str] = live_status
+
+    base_csv_status = get_csv_entry_signal(stock_row)
+    base_core = base_csv_status.replace("（※急落要確認）", "（25日線回復待ち）")
+    if base_core != live_status:
+        st.session_state.stock_entry_changed_cache[c_str] = {
+            "old": base_csv_status,
+            "new": live_status
+        }
+    else:
+        st.session_state.stock_entry_changed_cache.pop(c_str, None)
+    return timing_info
 
 
 # ==========================================
@@ -5212,6 +5282,13 @@ with tab1:
 
         df["仕分け"] = df["コード"].astype(str).map(get_status_badge)
 
+        # ③ 詳細画面が開かれている場合は、上の1行表を描画する前にリアルタイム精密判定を先行同期する
+        pre_selected_code = st.session_state.get("selected_stock_code", None)
+        if pre_selected_code is not None:
+            matched_rows = df[df["コード"].astype(str) == str(pre_selected_code)]
+            if not matched_rows.empty:
+                sync_live_entry_cache(pre_selected_code, matched_rows.iloc[0])
+
         # FX目線での統合売買・エントリー判定列を付与（詳細画面と完全統一）
         df["エントリー判定"] = df.apply(get_quick_entry_signal, axis=1)
 
@@ -5351,7 +5428,7 @@ with tab1:
                 width="small",
                 help="タップするとこの銘柄の詳細分析画面が開きます"
             ),
-            "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium", help="【今の行動判断＋現在のチャート位置】🟢【今が好機】押し目買い圏 / 🔵【順張り好機】高値ブレイク / 🟡【今は待て】高値過熱(押し目待ち) / ⚪【今は待て】深押し(25日線回復待ち) / 🟣【警戒・様子見】リバウンド途上 / 🔴【手出し厳禁】下降トレンド"),
+            "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium", help="【今の行動判断＋現在のチャート位置】（⚡＝詳細で最新チャート更新あり）🟢【今が好機】押し目買い圏 / 🔵【順張り好機】高値ブレイク / 🟡【今は待て】高値過熱(押し目待ち) / ⚪【今は待て】深押し(25日線回復待ち) / 🟣【警戒・様子見】リバウンド途上 / 🔴【手出し厳禁】下降トレンド"),
             "銘柄名_リンク": st.column_config.LinkColumn(
                 "銘柄名 (Yahooへ)",
                 display_text=r"#(.*)",

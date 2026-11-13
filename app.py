@@ -647,13 +647,13 @@ st.markdown("""
         border: none !important;
     }
 
-    /* タブパネル（コンテンツ中身）の通常文字色を濃紺・黒に固定 */
+    /* タブパネル（コンテンツ中身）の通常文字色を濃紺・黒に固定（ボタン内部の文字は除外） */
     div[data-testid="stTabContent"],
     div[role="tabpanel"],
     div[data-baseweb="tab-panel"] {
         color: #0F172A !important;
     }
-    div[data-testid="stTabContent"] p,
+    div[data-testid="stTabContent"] p:not(button p),
     div[data-testid="stTabContent"] h1,
     div[data-testid="stTabContent"] h2,
     div[data-testid="stTabContent"] h3,
@@ -773,8 +773,23 @@ st.markdown("""
     div[data-testid="stButton"] > button *,
     div[data-testid="stDownloadButton"] > button *,
     div[data-testid="stLinkButton"] > a *,
-    a[data-testid="stLinkButton"] * {
+    a[data-testid="stLinkButton"] *,
+    html body div[data-testid="stTabContent"] button p,
+    html body div[data-testid="stTabContent"] button span,
+    html body div[data-testid="stTabContent"] button div,
+    html body div[data-testid="stExpander"] button p,
+    html body div[data-testid="stExpander"] button span,
+    html body div[data-testid="stExpander"] button div,
+    html body div.stButton > button p,
+    html body div.stButton > button span,
+    html body div[data-testid="stButton"] button p,
+    html body div[data-testid="stButton"] button span,
+    html body button[kind="primary"] p,
+    html body button[kind="primary"] span,
+    html body button[kind="secondary"] p,
+    html body button[kind="secondary"] span {
         color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
         font-weight: 700 !important;
     }
 
@@ -5007,11 +5022,20 @@ with tab1:
                     with col_r2:
                         st.caption(f"この条件を外すだけで、以下の {r_cnt} 社がすぐに一覧に表示されます。")
 
+                    def get_short_status_label(code):
+                        st_val = st.session_state.stock_status.get(str(code), {}).get("status", "unreviewed")
+                        if st_val == "watching":
+                            return "監"
+                        elif st_val == "excluded":
+                            return "除"
+                        return "未"
+
                     r_df_display = r_df.head(20).copy()
+                    r_df_display["仕分け"] = r_df_display["コード"].astype(str).map(get_short_status_label)
                     r_df_display["エントリー判定"] = r_df_display.apply(get_quick_entry_signal, axis=1)
 
                     preview_cols = [
-                        "エントリー判定", "コード", "銘柄名", "株価(円)", "単元購入額(万円)", "直近決算日",
+                        "仕分け", "エントリー判定", "コード", "銘柄名", "株価(円)", "単元購入額(万円)", "直近決算日",
                         "売上高成長率(%)", "時価総額(億円)", "インサイダー保有率(%)", "高値下落率(%)",
                         "財務健全性", "特徴・サービス"
                     ]
@@ -5021,6 +5045,7 @@ with tab1:
                         use_container_width=True,
                         hide_index=True,
                         column_config={
+                            "仕分け": st.column_config.TextColumn("仕分け", width="small", help="未:未判定 / 監:監視中 / 除:対象外"),
                             "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium")
                         }
                     )
@@ -5139,21 +5164,17 @@ with tab1:
         with st.expander("📄 生成されたAI相場・0件原因診断プロンプトを確認する（手動コピー用）", expanded=False):
             st.code(zero_hit_prompt, language="markdown")
     else:
-        # 銘柄の仕分け判定列を付与（メモがある銘柄には 📝 を付与）
+        # 銘柄の仕分け列を付与（1文字表記：未 / 監 / 除）
         def get_status_badge(code):
             c_str = str(code)
             st_info = st.session_state.stock_status.get(c_str, {})
             st_val = st_info.get("status", "unreviewed")
-            
-            # メモが存在するか確認
-            has_note = bool(st.session_state.stock_notes.get(c_str, {}).get("note", "").strip())
-            note_icon = " 📝" if has_note else ""
 
             if st_val == "watching":
-                return f"⭐️ 監視中{note_icon}"
+                return "監"
             elif st_val == "excluded":
-                return f"❌ 対象外{note_icon}"
-            return f"⚪ 未判定{note_icon}"
+                return "除"
+            return "未"
 
         df["仕分け"] = df["コード"].astype(str).map(get_status_badge)
 
@@ -5277,8 +5298,22 @@ with tab1:
         valid_cols = [c for c in display_cols if c in tab1_df.columns]
         display_df = tab1_df[valid_cols].copy()
 
+        # メモ登録済み銘柄には特徴欄の先頭に 📝 アイコンを付与して視認性を維持
+        if "特徴・サービス" in display_df.columns and "コード" in display_df.columns:
+            def _prepend_note_icon(row_d):
+                has_n = bool(st.session_state.stock_notes.get(str(row_d["コード"]), {}).get("note", "").strip())
+                feat_s = str(row_d.get("特徴・サービス", ""))
+                return f"📝 {feat_s}" if (has_n and not feat_s.startswith("📝")) else feat_s
+            display_df["特徴・サービス"] = display_df.apply(_prepend_note_icon, axis=1)
+
         table_column_config = {
-            "仕分け": st.column_config.TextColumn("仕分け判定", width="small", help="⭐️監視中 / ❌対象外 / ⚪未判定"),
+            "仕分け": st.column_config.SelectboxColumn(
+                "仕分け",
+                help="タップしてプルダウンで変更（未:未判定 / 監:監視中 / 除:対象外 / 🔍詳細:詳細分析を開く）",
+                width="small",
+                options=["未", "監", "除", "🔍詳細"],
+                required=True
+            ),
             "エントリー判定": st.column_config.TextColumn("エントリー判定 (FX目線)", width="medium", help="【今の行動判断＋現在のチャート位置】🟢【今が好機】押し目買い圏 / 🔵【順張り好機】高値ブレイク / 🟡【今は待て】高値過熱(押し目待ち) / ⚪【今は待て】深押し(25日線回復待ち) / 🟣【警戒・様子見】リバウンド途上 / 🔴【手出し厳禁】下降トレンド"),
             "コード": st.column_config.TextColumn("コード", width="small", help="証券コード（行選択でワンタップコピー可能）"),
             "銘柄名_リンク": st.column_config.LinkColumn(
@@ -5308,16 +5343,8 @@ with tab1:
             "代表取締役": st.column_config.TextColumn("代表取締役社長")
         }
 
-        # チェックボックス付きテーブル設定
-        editor_column_config = {
-            "選択": st.column_config.CheckboxColumn(
-                "選択",
-                help="チェックを付けると深掘り分析カードを表示、外すと全一覧に戻ります",
-                default=False,
-                width="small"
-            ),
-            **table_column_config
-        }
+        if "editor_version" not in st.session_state:
+            st.session_state.editor_version = 0
 
         # 選択状態のチェックとテーブル表示ロジック
         selected_code = st.session_state.get("selected_stock_code", None)
@@ -5386,23 +5413,52 @@ with tab1:
                 st.caption(f"💡 表示中のスマートビュー（{total_in_view}社）の並び順で前後の銘柄に直接移動できます。")
 
                 single_display_df = display_df.iloc[[pos]].copy()
+                single_column_config = {
+                    **table_column_config,
+                    "仕分け": st.column_config.SelectboxColumn(
+                        "仕分け",
+                        help="タップしてプルダウンで変更（未:未判定 / 監:監視中 / 除:対象外）",
+                        width="small",
+                        options=["未", "監", "除"],
+                        required=True
+                    )
+                }
 
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
-                st.dataframe(
+                edited_single_df = st.data_editor(
                     single_display_df,
                     use_container_width=True,
                     hide_index=True,
-                    column_config=table_column_config,
-                    key=f"df_single_{cur_code}"
+                    column_config=single_column_config,
+                    disabled=[c for c in single_display_df.columns if c != "仕分け"],
+                    key=f"df_single_{cur_code}_{st.session_state.editor_version}"
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
+
+                if edited_single_df is not None and "仕分け" in edited_single_df.columns and "仕分け" in single_display_df.columns:
+                    o_s = single_display_df["仕分け"].iloc[0]
+                    n_s = edited_single_df["仕分け"].iloc[0]
+                    if o_s != n_s:
+                        cur_p_s = tab1_df.iloc[pos].get("株価(円)", 1000.0)
+                        buy_p_s = float(cur_p_s) if (pd.notna(cur_p_s) and str(cur_p_s) != "-") else 1000.0
+                        st.session_state.editor_version += 1
+                        if n_s == "監":
+                            set_stock_status(cur_code, "watching", watch_price=buy_p_s)
+                            st.toast(f"⭐️ {cur_code} {cur_name} を【監（監視中）】に変更しました！", icon="⭐️")
+                        elif n_s == "除":
+                            set_stock_status(cur_code, "excluded")
+                            st.toast(f"❌ {cur_code} {cur_name} を【除（対象外）】に変更しました。", icon="🗑️")
+                        elif n_s == "未":
+                            set_stock_status(cur_code, "unreviewed")
+                            st.toast(f"⚪ {cur_code} {cur_name} を【未（未判定）】に戻しました。")
+                        st.rerun()
 
                 # 選択された銘柄の直下に深掘り分析カードを展開
                 render_stock_deep_dive(pos, tab1_df)
 
             else:
                 # ==========================================
-                # 【全候補銘柄一覧を表示：セルタップで即座に選択】
+                # 【全候補銘柄一覧を表示：プルダウンで仕分け変更＆詳細へワンタップ移動】
                 # ==========================================
                 h_col1, h_col2 = st.columns([2.5, 2.5])
                 with h_col1:
@@ -5430,19 +5486,68 @@ with tab1:
                         </span>
                     </div>
                     """, unsafe_allow_html=True)
-                st.caption("💡 銘柄の行（セルどこでも）をタッチすると、その銘柄のみの表示に切り替わり直下に深掘り分析が表示されます。")
 
+                # 🔍 銘柄を選んで詳細分析へワンタップ移動するプルダウン（導線①）
+                if len(tab1_df) > 0:
+                    detail_jump_options = ["🔍 銘柄を選んで詳細分析を開く（または表の「仕分け」列から「🔍詳細」を選択）..."] + [
+                        f"{row['コード']} ｜ {row['銘柄名']} （株価: {int(row['株価(円)']):,}円 / {row['エントリー判定']}）"
+                        if pd.notna(row.get("株価(円)")) and str(row.get("株価(円)")) != "-"
+                        else f"{row['コード']} ｜ {row['銘柄名']} （{row['エントリー判定']}）"
+                        for _, row in tab1_df.iterrows()
+                    ]
+                    chosen_jump = st.selectbox(
+                        "🔍 銘柄詳細へ移動:",
+                        options=detail_jump_options,
+                        index=0,
+                        key=f"jump_select_{st.session_state.get('editor_version', 0)}_{len(tab1_df)}_{status_filter}",
+                        label_visibility="collapsed"
+                    )
+                    if chosen_jump != detail_jump_options[0]:
+                        jump_code = chosen_jump.split("｜")[0].strip()
+                        st.session_state.selected_stock_code = jump_code
+                        st.session_state.editor_version = st.session_state.get("editor_version", 0) + 1
+                        st.rerun()
+
+                st.caption("💡 左端「仕分け」列をタップするとプルダウンで【未 / 監 / 除】を即時変更、または【🔍詳細】で深掘り画面へ直接移動できます。")
+
+                editor_key = f"df_editor_all_{st.session_state.editor_version}_{len(tab1_df)}_{status_filter}_{selected_smart_view}"
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
-                selection_event = st.dataframe(
+                edited_df = st.data_editor(
                     display_df,
                     use_container_width=True,
                     hide_index=True,
                     column_config=table_column_config,
-                    on_select="rerun",
-                    selection_mode="single-row",
-                    key="df_all_stocks"
+                    disabled=[c for c in display_df.columns if c != "仕分け"],
+                    key=editor_key
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
+
+                # 表内プルダウンによるステータス変更・詳細遷移の検知（導線②）
+                if edited_df is not None and "仕分け" in edited_df.columns and "仕分け" in display_df.columns:
+                    orig_vals = display_df["仕分け"].tolist()
+                    new_vals = edited_df["仕分け"].tolist()
+                    for row_idx, (o_val, n_val) in enumerate(zip(orig_vals, new_vals)):
+                        if o_val != n_val:
+                            target_code = str(tab1_df.iloc[row_idx]["コード"])
+                            target_name = str(tab1_df.iloc[row_idx]["銘柄名"])
+                            cur_p = tab1_df.iloc[row_idx].get("株価(円)", 1000.0)
+                            buy_p_guess = float(cur_p) if (pd.notna(cur_p) and str(cur_p) != "-") else 1000.0
+                            st.session_state.editor_version += 1
+                            if n_val == "🔍詳細":
+                                st.session_state.selected_stock_code = target_code
+                                st.rerun()
+                            elif n_val == "監":
+                                set_stock_status(target_code, "watching", watch_price=buy_p_guess)
+                                st.toast(f"⭐️ {target_code} {target_name} を【監（監視中）】に変更しました！", icon="⭐️")
+                                st.rerun()
+                            elif n_val == "除":
+                                set_stock_status(target_code, "excluded")
+                                st.toast(f"❌ {target_code} {target_name} を【除（対象外）】に変更しました。", icon="🗑️")
+                                st.rerun()
+                            elif n_val == "未":
+                                set_stock_status(target_code, "unreviewed")
+                                st.toast(f"⚪ {target_code} {target_name} を【未（未判定）】に戻しました。")
+                                st.rerun()
 
                 csv_data = tab1_df.to_csv(index=False, encoding="utf-8-sig")
                 st.download_button(
@@ -5452,13 +5557,6 @@ with tab1:
                     mime="text/csv",
                     use_container_width=True
                 )
-
-                # 行（セル）がタップ選択されたか検知
-                selected_rows = selection_event.selection.rows if selection_event else []
-                if len(selected_rows) > 0:
-                    selected_idx = selected_rows[0]
-                    st.session_state.selected_stock_code = str(tab1_df.iloc[selected_idx]["コード"])
-                    st.rerun()
 
 
 # ==========================================

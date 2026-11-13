@@ -3220,6 +3220,175 @@ def simulate_single_filter_relaxation(base_df, rules):
 
 
 # ==========================================
+# 🤖 検索結果0件時のGemini向けAI相場環境・ゼロヒット原因診断プロンプト生成
+# // MAINTENANCE_REQUIRED: 0件時の診断項目・プロンプトテンプレートを変更する際はここを保守してください
+# ==========================================
+def generate_zero_hit_ai_prompt(market_df, active_rules, relaxation_results, preset_label, active_filters, base_pop_label):
+    """検索結果が0件になった際の市場統計・ボトルネック・ニアミス銘柄を整理し、Gemini向け診断プロンプトを生成する"""
+    cur_dt_str = now_jst().strftime("%Y年%m月%d日 %H:%M")
+    preset_str = preset_label if preset_label else "⚙️ カスタム設定（個別条件指定）"
+    filters_str = " / ".join(active_filters) if active_filters else "なし（基本母集団のみ）"
+
+    # 母集団（market_df）の相場コンディション統計を安全に算出
+    total_cnt = len(market_df) if market_df is not None else 0
+    if total_cnt > 0:
+        trend_series = market_df["チャートトレンド"].astype(str) if "チャートトレンド" in market_df.columns else pd.Series([], dtype=str)
+        up_cnt = int(trend_series.str.contains("上昇トレンド", na=False).sum())
+        flat_cnt = int(trend_series.str.contains("保ち合い", na=False).sum())
+        down_cnt = int(trend_series.str.contains("下降トレンド|下落トレンド", na=False).sum())
+
+        up_pct = round((up_cnt / total_cnt) * 100, 1)
+        flat_pct = round((flat_cnt / total_cnt) * 100, 1)
+        down_pct = round((down_cnt / total_cnt) * 100, 1)
+
+        if "高値下落率(%)" in market_df.columns:
+            drops = pd.to_numeric(market_df["高値下落率(%)"], errors="coerce")
+            avg_drop = round(float(drops.mean()), 1) if drops.notna().any() else 0.0
+        else:
+            avg_drop = 0.0
+
+        dip_cnt = int((market_df["押し目フラグ"] == "押し目買い圏").sum()) if "押し目フラグ" in market_df.columns else 0
+        market_stats_text = (
+            f"・分析対象母集団（{base_pop_label}）: {total_cnt} 社\n"
+            f"・上昇トレンド銘柄: {up_cnt} 社 ({up_pct}%)\n"
+            f"・保ち合い銘柄: {flat_cnt} 社 ({flat_pct}%)\n"
+            f"・下降トレンド銘柄: {down_cnt} 社 ({down_pct}%)\n"
+            f"・52週高値からの平均下落率: -{avg_drop:.1f}%\n"
+            f"・押し目買い圏（高値から7〜30%調整）銘柄数: {dip_cnt} 社"
+        )
+    else:
+        market_stats_text = f"・分析対象母集団（{base_pop_label}）: 0 社（※対象市場チェック等が全て外れているため母集団自体が空です）"
+
+    # 各アクティブ条件の単独通過率（ボトルネック分析）
+    bottleneck_lines = []
+    if total_cnt > 0 and active_rules:
+        rule_stats = []
+        for r in active_rules:
+            try:
+                mask = r["condition_fn"](market_df)
+                pass_cnt = int(mask.sum())
+            except Exception:
+                pass_cnt = 0
+            pass_pct = round((pass_cnt / total_cnt) * 100, 1)
+            rule_stats.append((pass_cnt, pass_pct, r["name"]))
+        # 通過社数が少ない（＝厳しいボトルネックになっている）順に並べる
+        rule_stats.sort(key=lambda x: x[0])
+        for p_cnt, p_pct, r_name in rule_stats:
+            bottleneck_lines.append(f"・【{r_name}】 ➔ 単独通過: {p_cnt} / {total_cnt} 社 ({p_pct}%)")
+    else:
+        bottleneck_lines.append("・（単独条件の通過率データなし）")
+    bottleneck_text = "\n".join(bottleneck_lines)
+
+    # 惜しくも脱落した準本命・ニアミス銘柄の抽出
+    near_miss_lines = []
+    if relaxation_results:
+        for item in relaxation_results[:3]:
+            r_name = item["rule"]["name"]
+            r_cnt = item["count"]
+            r_df = item["df"]
+            near_miss_lines.append(f"■ 【{r_name}】を外すと通過する準本命候補（該当 {r_cnt} 社・上位最大5社）:")
+            for _, row in r_df.head(5).iterrows():
+                code = row.get("コード", "-")
+                name = row.get("銘柄名", "-")
+                mkt = row.get("市場", "-")
+                price = row.get("株価(円)", "-")
+                mcap = row.get("時価総額(億円)", "-")
+                rev = row.get("売上高成長率(%)", "-")
+                ins = row.get("インサイダー保有率(%)", "-")
+                trd = row.get("チャートトレンド", "-")
+                drp = row.get("高値下落率(%)", "-")
+                fin = row.get("財務健全性", "-")
+                feat = row.get("特徴・サービス", "-")
+                near_miss_lines.append(
+                    f"  - [{code}] {name} ({mkt}) | 株価:{price}円 | 時価:{mcap}億円 | 売上成長:{rev}% | "
+                    f"創業者比率:{ins}% | トレンド:{trd} | 高値下落率:-{drp}% | 財務:{fin} | 事業:{feat}"
+                )
+    elif total_cnt > 0 and active_rules:
+        # 1条件解除では見つからない（2条件以上競合している）場合は、クリア数が多い上位5社を抽出
+        scored_rows = []
+        for idx, row in market_df.iterrows():
+            single_row_df = market_df.loc[[idx]]
+            cleared = 0
+            failed_names = []
+            for r in active_rules:
+                try:
+                    if bool(r["condition_fn"](single_row_df).iloc[0]):
+                        cleared += 1
+                    else:
+                        failed_names.append(r["name"])
+                except Exception:
+                    failed_names.append(r["name"])
+            scored_rows.append((cleared, failed_names, row))
+        scored_rows.sort(key=lambda x: x[0], reverse=True)
+        near_miss_lines.append(f"■ 全{len(active_rules)}条件中、クリア数が多い上位5社（複数条件の未達で脱落中）:")
+        for cleared, failed_names, row in scored_rows[:5]:
+            code = row.get("コード", "-")
+            name = row.get("銘柄名", "-")
+            mkt = row.get("市場", "-")
+            price = row.get("株価(円)", "-")
+            mcap = row.get("時価総額(億円)", "-")
+            rev = row.get("売上高成長率(%)", "-")
+            trd = row.get("チャートトレンド", "-")
+            drp = row.get("高値下落率(%)", "-")
+            fail_str = " / ".join(failed_names) if failed_names else "なし"
+            near_miss_lines.append(
+                f"  - [{code}] {name} ({mkt}) | {cleared}/{len(active_rules)}条件クリア | "
+                f"株価:{price}円 | 時価:{mcap}億 | 売上+{rev}% | トレンド:{trd} (高値-{drp}%) | 未達条件: [{fail_str}]"
+            )
+    else:
+        near_miss_lines.append("・（抽出可能なニアミス銘柄なし）")
+    near_miss_text = "\n".join(near_miss_lines)
+
+    prompt = f"""あなたは敏腕株式ストラテジスト兼、遠藤洋氏の『10万円から始める！小型株集中投資で1億円』のメソッドに精通したマーケットアナリストAIです。
+現在（{cur_dt_str}時点）、小型成長株スクリーニングアプリ（TOTOTO-KABU）で投資条件を絞り込んだところ、**検索結果が「0件」**になりました。
+
+リアルタイムWeb検索（Google検索機能）をフル稼働し、手元のスクリーニング統計データと最新の日本株・グロース市場ニュース・個別銘柄の適時開示を照合して、**【第1部：市場全体（マクロ）の地合い解説】【第2部：惜しくも脱落した準本命銘柄の個別診断】【第3部：今後の展開と取るべき戦略】** の3部構成（A4用紙2〜3枚相当）で徹底分析レポートを作成してください。
+
+【検索条件とゼロヒット状況】
+・実行日時: {cur_dt_str}
+・適用中のプリセット: {preset_str}
+・適用中のフィルター条件一覧: {filters_str}
+・検索結果: **0件**
+
+【アプリ母集団の相場コンディション統計】
+{market_stats_text}
+
+【各条件単独での通過率（ボトルネック分析：通過社数が少ない順）】
+{bottleneck_text}
+
+【惜しくも条件から脱落した「準本命・ニアミス銘柄」データ】
+{near_miss_text}
+
+---
+
+【必ず以下のフォーマット・構成で徹底分析を出力してください】
+
+# 🧭 【TOTOTO-KABU】ゼロヒット原因 ＆ 相場環境AI診断レポート（{cur_dt_str}）
+
+## 第1部：【全体・マクロ相場診断】なぜ今、検索結果が0件になったのか？
+1. **データ上の最大ボトルネック分析**:
+   - 上記の通過率データを踏まえ、今回の0件ヒットを引き起こしている最大の関門（どの条件が特に厳しく効いているのか）を構造的に整理してください。
+2. **現在の日本株・東証グロース（中小型株）市場の地合いと背景（Web検索で最新裏取り）**:
+   - 今現在、日経平均・TOPIX・東証グロース市場250指数がどのようなトレンドにあるのか、直近の株価推移とその理由（金利・為替・海外株動向・決算シーズンの影響・需給・資金ローテーション等）を最新の事実に基づいて解説してください。
+   - 「フィルターが厳しすぎるだけ」なのか、それとも「市場全体が調整入りし、トレンド条件等が自然に全滅する地合いにある」のかを切り分けて判定してください。
+
+## 第2部：【個別・ミクロ銘柄診断】惜しくも脱落した「準本命・ニアミス銘柄」の深掘り検証
+（※上記の「準本命・ニアミス銘柄」から主要3〜5社を取り上げ、最新ニュース・適時開示・決算をWeb検索した上で、以下の項目を個別に回答してください）
+各銘柄について：
+* **[コード] 銘柄名**:
+  - **脱落要因・直近株価がそうなった理由**: （なぜトレンドが崩れたのか／なぜ大きく調整・過熱しているのか。市場全体の地合いのせいなのか、決算や増資・ニュース等の個別要因があるのか）
+  - **判定（地合い連れ安のチャンス ／ 個別悪材料で要警戒 ／ 様子見）**: 理由とともに明確に判定。
+
+## 第3部：【今後の展開 ＆ 実践アクションプラン】今、投資家はどう動くべきか？
+1. **今後の相場展開の注目イベント・見通し**:
+   - 直近で控えている重要イベント（日銀・米FOMC・経済指標・国内決算集中期間・IPO需給など）と、中小型成長株に資金が戻りやすいタイミングの目安。
+2. **今すぐ取るべき具体的な投資戦略の提案**:
+   - **方針判定**: 今は無理に条件を緩めず現金比率を高めて待つべき（「休むも相場」モード）か、それとも「上昇トレンド条件」や「押し目条件」等を一時緩和して、連れ安している優良株を指値で待ち伏せすべきか。
+   - **推奨アクション**: 現在の地合いを踏まえた具体的なフィルター調整案、または監視リストへの仕込み戦略を提案してください。"""
+    return prompt
+
+
+# ==========================================
 # サイドバー最上部：現在適用中の条件バッジ ＆ 該当社数 ＆ リセットボタン
 # ==========================================
 with sidebar_badge_box:
@@ -4719,6 +4888,115 @@ with tab1:
                 st.info("💡 **ヒント**: 現在設定されている複数の厳しい条件が競合して0件になっています。条件を2つ以上解除するか、画面上部・サイドバーの「🔄 全クリア」を押して条件をリセットしてください。")
             else:
                 st.info("💡 **ヒント**: 上級者設定で対象市場（グロース、スタンダード等）にチェックが入っているか確認するか、画面上部の「🔄 全クリア」を押して条件をリセットしてください。")
+
+        # ==========================================
+        # 🤖 AI相場環境 ＆ ゼロヒット原因診断（Gemini向けプロンプト自動生成）
+        # ==========================================
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="background: linear-gradient(135deg, #F8FAFC 0%, #EEF2FF 100%); border: 2px solid #6366F1; border-radius: 10px; padding: 14px 18px; margin: 6px 0 12px 0;">
+            <div style="font-size: 1.08rem; font-weight: 800; color: #312E81; display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                🤖 <span>【AI相場診断】なぜ0件になったのか？Geminiで最新相場＆個別原因を徹底解説</span>
+            </div>
+            <div style="font-size: 0.88rem; color: #334155; line-height: 1.55;">
+                現在のフィルター条件・母集団のトレンド統計・惜しくも脱落した準本命銘柄データをまとめた専用プロンプトを生成しました。<br>
+                下のボタンを押してGeminiに貼り付けるだけで、<strong>「相場全体の地合いの影響か、個別悪材料か」「今後の展開と立ち回り戦略」</strong>をWeb検索付きで診断できます。
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        zero_hit_prompt = generate_zero_hit_ai_prompt(
+            market_df=market_filtered_df,
+            active_rules=active_rules,
+            relaxation_results=relaxation_results,
+            preset_label=current_preset_label,
+            active_filters=active_filters,
+            base_pop_label=base_population_label
+        )
+        zero_hit_prompt_json = json.dumps(zero_hit_prompt)
+
+        zero_copy_html = f"""
+        <div style="margin: 0; padding: 2px 0;">
+            <button id="copyZeroHitPromptBtn" onclick="copyZeroHitToClipboard()" style="
+                width: 100%;
+                background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%);
+                color: white;
+                border: none;
+                padding: 12px 16px;
+                font-size: 15px;
+                line-height: 1.4;
+                font-weight: 700;
+                border-radius: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                box-shadow: 0 4px 6px -1px rgba(67, 56, 202, 0.25);
+                transition: all 0.2s ease;
+                box-sizing: border-box;
+            ">
+                <span>📋 AI相場・0件原因診断プロンプトをワンクリックでコピー</span>
+            </button>
+        </div>
+        <script>
+        function copyZeroHitToClipboard() {{
+            const text = {zero_hit_prompt_json};
+            const btn = document.getElementById("copyZeroHitPromptBtn");
+
+            function setSuccess() {{
+                btn.innerHTML = "✅ コピー完了！Geminiに貼り付けて送信してください (Ctrl+V)";
+                btn.style.background = "#16A34A";
+                setTimeout(function() {{
+                    btn.innerHTML = "<span>📋 AI相場・0件原因診断プロンプトをワンクリックでコピー</span>";
+                    btn.style.background = "linear-gradient(135deg, #4338CA 0%, #6366F1 100%)";
+                }}, 3500);
+            }}
+
+            function setFailure() {{
+                btn.innerHTML = "⚠️ コピー失敗：下のアコーディオンから手動コピーしてください";
+                btn.style.background = "#DC2626";
+                setTimeout(function() {{
+                    btn.innerHTML = "<span>📋 AI相場・0件原因診断プロンプトをワンクリックでコピー</span>";
+                    btn.style.background = "linear-gradient(135deg, #4338CA 0%, #6366F1 100%)";
+                }}, 3500);
+            }}
+
+            function fallbackExecCopy() {{
+                try {{
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-9999px";
+                    textArea.style.top = "-9999px";
+                    textArea.style.opacity = "0";
+                    textArea.setAttribute("readonly", "");
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    textArea.setSelectionRange(0, 999999);
+                    const successful = document.execCommand("copy");
+                    document.body.removeChild(textArea);
+                    if (successful) {{ setSuccess(); }} else {{ setFailure(); }}
+                }} catch (err) {{
+                    setFailure();
+                }}
+            }}
+
+            if (navigator.clipboard && window.isSecureContext) {{
+                navigator.clipboard.writeText(text)
+                    .then(setSuccess)
+                    .catch(function(err) {{ fallbackExecCopy(); }});
+            }} else {{
+                fallbackExecCopy();
+            }}
+        }}
+        </script>
+        """
+        st.components.v1.html(zero_copy_html, height=62)
+
+        with st.expander("📄 生成されたAI相場・0件原因診断プロンプトを確認する（手動コピー用）", expanded=False):
+            st.code(zero_hit_prompt, language="markdown")
     else:
         # 銘柄の仕分け判定列を付与（メモがある銘柄には 📝 を付与）
         def get_status_badge(code):

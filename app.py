@@ -3612,11 +3612,7 @@ def render_stock_deep_dive(idx, tab1_df):
         change_info = st.session_state.get("stock_entry_changed_cache", {}).get(c_key_str)
         change_badge_html = ""
         if change_info:
-            change_badge_html = f"""
-            <div style="background-color: #FEF9C3; border: 1.5px solid #EAB308; color: #854D0E; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">
-                ⚡ 最新チャートにより判定を更新しました（一覧時: {change_info['old']} ➔ 最新: {change_info['new']}）
-            </div>
-            """
+            change_badge_html = f'<div style="background-color: #FEF9C3; border: 1.5px solid #EAB308; color: #854D0E; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px;">⚡ 最新チャートにより判定を更新しました（一覧時: {change_info["old"]} ➔ 最新: {change_info["new"]}）</div>'
 
         st.markdown(f"""
         <div style="background-color: {timing_info['bg_color']}; border: 2px solid {timing_info['border_color']}; border-radius: 10px; padding: 14px 18px; margin-top: 12px; margin-bottom: 16px;">
@@ -4864,6 +4860,36 @@ def sync_live_entry_cache(stock_code, stock_row):
     return timing_info
 
 
+def style_code_column(target_df, prefix_icon="🔍"):
+    """コード列を濃い青背景＋白抜き太字＋アイコン付きで差別化して返す"""
+    styled_df = target_df.copy()
+    if "コード" in styled_df.columns:
+        styled_df["コード"] = styled_df["コード"].astype(str).map(lambda c: f"{prefix_icon} {c}")
+        return styled_df.style.set_properties(
+            subset=["コード"],
+            **{"background-color": "#2563EB", "color": "#FFFFFF", "font-weight": "700"}
+        )
+    return styled_df
+
+
+def toggle_stock_status_cycle(target_code, target_name, price_val=None):
+    """仕分けステータスを【⚪未 ➔ ⭐️監 ➔ ❌除】の順にワンタップ切替する"""
+    c_str = str(target_code)
+    cur_st = st.session_state.stock_status.get(c_str, {}).get("status", "unreviewed")
+    watch_p = float(price_val) if (pd.notna(price_val) and str(price_val) != "-") else 1000.0
+    st.session_state.editor_version = st.session_state.get("editor_version", 0) + 1
+    if cur_st == "unreviewed":
+        set_stock_status(c_str, "watching", watch_price=watch_p)
+        st.toast(f"⭐️ {c_str} {target_name} を【⭐️監（監視中）】に変更しました！", icon="⭐️")
+    elif cur_st == "watching":
+        set_stock_status(c_str, "excluded")
+        st.toast(f"❌ {c_str} {target_name} を【❌除（対象外）】に変更しました。", icon="🗑️")
+    else:
+        set_stock_status(c_str, "unreviewed")
+        st.toast(f"⚪ {c_str} {target_name} を【⚪未（未判定）】に戻しました。")
+    st.rerun()
+
+
 # ==========================================
 # 🏆 4大プリセット適合診断エンジン（全タブ共通）
 # // MAINTENANCE_REQUIRED: 4大プリセットの基準値を変更する際はここを保守してください
@@ -5113,7 +5139,7 @@ with tab1:
                     st.caption("💡 **「コード（詳細へ）」** のセルを1タップすると条件を解除して詳細画面へ直接移動します。**「仕分け」** セルで **【⚪未 ➔ ⭐️監 ➔ ❌除】** をワンタップ切替できます。")
                     preview_key = f"df_preview_relax_{r_info['key']}_{idx}_{st.session_state.get('editor_version', 0)}"
                     preview_event = st.dataframe(
-                        r_df_display[valid_p_cols],
+                        style_code_column(r_df_display[valid_p_cols], prefix_icon="🔍"),
                         use_container_width=True,
                         hide_index=True,
                         on_select="rerun",
@@ -5139,20 +5165,7 @@ with tab1:
                                 st.toast(f"✨ 「{r_info['name']}」を解除して {p_code} {p_name} の詳細を開きます！", icon="🔍")
                                 st.rerun()
                             elif p_col_name == "仕分け":
-                                cur_st = st.session_state.stock_status.get(p_code, {}).get("status", "unreviewed")
-                                cur_p_val = p_row.get("株価(円)", 1000.0)
-                                watch_p_guess = float(cur_p_val) if (pd.notna(cur_p_val) and str(cur_p_val) != "-") else 1000.0
-                                st.session_state.editor_version = st.session_state.get("editor_version", 0) + 1
-                                if cur_st == "unreviewed":
-                                    set_stock_status(p_code, "watching", watch_price=watch_p_guess)
-                                    st.toast(f"⭐️ {p_code} {p_name} を【⭐️監（監視中）】に変更しました！", icon="⭐️")
-                                elif cur_st == "watching":
-                                    set_stock_status(p_code, "excluded")
-                                    st.toast(f"❌ {p_code} {p_name} を【❌除（対象外）】に変更しました。", icon="🗑️")
-                                else:
-                                    set_stock_status(p_code, "unreviewed")
-                                    st.toast(f"⚪ {p_code} {p_name} を【⚪未（未判定）】に戻しました。")
-                                st.rerun()
+                                toggle_stock_status_cycle(p_code, p_name, p_row.get("株価(円)", 1000.0))
         else:
             if len(active_rules) >= 2:
                 st.info("💡 **ヒント**: 現在設定されている複数の厳しい条件が競合して0件になっています。条件を2つ以上解除するか、画面上部・サイドバーの「🔄 全クリア」を押して条件をリセットしてください。")
@@ -5528,43 +5541,34 @@ with tab1:
                 single_display_df = display_df.iloc[[pos]].copy()
                 single_column_config = {
                     **table_column_config,
-                    "仕分け": st.column_config.SelectboxColumn(
-                        "仕分け",
-                        help="タップしてプルダウンで変更（⚪未:未判定 / ⭐️監:監視中 / ❌除:対象外）",
+                    "コード": st.column_config.TextColumn(
+                        "コード（一覧へ）",
                         width="small",
-                        options=["⚪未", "⭐️監", "❌除"],
-                        required=True
+                        help="タップすると全候補銘柄一覧に戻ります"
                     )
                 }
 
+                st.caption("💡 表の **「コード（一覧へ）」** をタップすると全候補一覧に戻り、**「仕分け」** をタップすると **【⚪未 ➔ ⭐️監 ➔ ❌除】** が切り替わります。")
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
-                edited_single_df = st.data_editor(
-                    single_display_df,
+                single_event = st.dataframe(
+                    style_code_column(single_display_df, prefix_icon="⬅️"),
                     use_container_width=True,
                     hide_index=True,
                     column_config=single_column_config,
-                    disabled=[c for c in single_display_df.columns if c != "仕分け"],
+                    on_select="rerun",
+                    selection_mode="single-cell",
                     key=f"df_single_{cur_code}_{st.session_state.editor_version}"
                 )
                 st.markdown('</div>', unsafe_allow_html=True)
 
-                if edited_single_df is not None and "仕分け" in edited_single_df.columns and "仕分け" in single_display_df.columns:
-                    o_s = single_display_df["仕分け"].iloc[0]
-                    n_s = edited_single_df["仕分け"].iloc[0]
-                    if o_s != n_s:
-                        cur_p_s = tab1_df.iloc[pos].get("株価(円)", 1000.0)
-                        buy_p_s = float(cur_p_s) if (pd.notna(cur_p_s) and str(cur_p_s) != "-") else 1000.0
+                if single_event and single_event.selection and single_event.selection.get("cells"):
+                    _, sel_s_col = single_event.selection["cells"][0]
+                    if sel_s_col == "コード":
+                        st.session_state.selected_stock_code = None
                         st.session_state.editor_version += 1
-                        if n_s == "⭐️監":
-                            set_stock_status(cur_code, "watching", watch_price=buy_p_s)
-                            st.toast(f"⭐️ {cur_code} {cur_name} を【⭐️監（監視中）】に変更しました！", icon="⭐️")
-                        elif n_s == "❌除":
-                            set_stock_status(cur_code, "excluded")
-                            st.toast(f"❌ {cur_code} {cur_name} を【❌除（対象外）】に変更しました。", icon="🗑️")
-                        elif n_s == "⚪未":
-                            set_stock_status(cur_code, "unreviewed")
-                            st.toast(f"⚪ {cur_code} {cur_name} を【⚪未（未判定）】に戻しました。")
                         st.rerun()
+                    elif sel_s_col == "仕分け":
+                        toggle_stock_status_cycle(cur_code, cur_name, tab1_df.iloc[pos].get("株価(円)", 1000.0))
 
                 # 選択された銘柄の直下に深掘り分析カードを展開
                 render_stock_deep_dive(pos, tab1_df)
@@ -5606,7 +5610,7 @@ with tab1:
                 table_key = f"df_select_all_{st.session_state.editor_version}_{len(tab1_df)}_{status_filter}_{selected_smart_view}"
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
                 selection_event = st.dataframe(
-                    display_df,
+                    style_code_column(display_df, prefix_icon="🔍"),
                     use_container_width=True,
                     hide_index=True,
                     column_config=table_column_config,
@@ -5627,20 +5631,7 @@ with tab1:
                             st.session_state.editor_version += 1
                             st.rerun()
                         elif sel_col_name == "仕分け":
-                            cur_st = st.session_state.stock_status.get(target_code, {}).get("status", "unreviewed")
-                            cur_p = tab1_df.iloc[sel_row_idx].get("株価(円)", 1000.0)
-                            buy_p_guess = float(cur_p) if (pd.notna(cur_p) and str(cur_p) != "-") else 1000.0
-                            st.session_state.editor_version += 1
-                            if cur_st == "unreviewed":
-                                set_stock_status(target_code, "watching", watch_price=buy_p_guess)
-                                st.toast(f"⭐️ {target_code} {target_name} を【⭐️監（監視中）】に変更しました！", icon="⭐️")
-                            elif cur_st == "watching":
-                                set_stock_status(target_code, "excluded")
-                                st.toast(f"❌ {target_code} {target_name} を【❌除（対象外）】に変更しました。", icon="🗑️")
-                            else:
-                                set_stock_status(target_code, "unreviewed")
-                                st.toast(f"⚪ {target_code} {target_name} を【⚪未（未判定）】に戻しました。")
-                            st.rerun()
+                            toggle_stock_status_cycle(target_code, target_name, tab1_df.iloc[sel_row_idx].get("株価(円)", 1000.0))
 
                 csv_data = tab1_df.to_csv(index=False, encoding="utf-8-sig")
                 st.download_button(

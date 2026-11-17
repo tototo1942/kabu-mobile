@@ -5355,6 +5355,42 @@ with tab1:
                 key="tab1_smart_view_select"
             )
 
+        # // MAINTENANCE_REQUIRED: 永続ソート項目を追加・変更する際は以下の選択肢とソートマッピングを併せて更新してください
+        sort_col_options = [
+            "🎯 スマートビュー標準（自動）",
+            "📈 エントリー判定 (FX目線)",
+            "🏷️ 仕分け (⭐️監/⚪未/❌除)",
+            "🔢 コード",
+            "💰 1株価格",
+            "💴 単元株(100株)",
+            "📅 直近決算日",
+            "🚀 売上成長率",
+            "🏢 時価総額",
+            "👑 オーナー保有率",
+            "🔻 高値比下落",
+            "📊 PER",
+        ]
+        if "tab1_persistent_sort_col" not in st.session_state or st.session_state.tab1_persistent_sort_col not in sort_col_options:
+            st.session_state.tab1_persistent_sort_col = sort_col_options[0]
+        if "tab1_persistent_sort_dir" not in st.session_state or st.session_state.tab1_persistent_sort_dir not in ["🔼 昇順", "🔽 降順"]:
+            st.session_state.tab1_persistent_sort_dir = "🔼 昇順"
+
+        sort_c1, sort_c2 = st.columns([2.0, 1.1])
+        with sort_c1:
+            selected_sort_col = st.selectbox(
+                label="📊 並び替え基準（仕分けを変更してもソート維持）:",
+                options=sort_col_options,
+                key="tab1_persistent_sort_col"
+            )
+        with sort_c2:
+            selected_sort_dir = st.radio(
+                label="並び順:",
+                options=["🔼 昇順", "🔽 降順"],
+                horizontal=True,
+                key="tab1_persistent_sort_dir",
+                disabled=(selected_sort_col == sort_col_options[0])
+            )
+
         # フィルター適用
         if "除外隠す" in status_filter:
             tab1_df = df[df["コード"].astype(str).map(lambda c: st.session_state.stock_status.get(c, {}).get("status")) != "excluded"].copy()
@@ -5413,6 +5449,42 @@ with tab1:
                 tab1_df.drop(columns=["_entry_rank"], inplace=True)
             elif "時価総額(億円)" in tab1_df.columns:
                 tab1_df = tab1_df.sort_values(by="時価総額(億円)", ascending=True)
+
+        # 永続ソート指定がある場合は、スマートビューの並び順を上書き適用（仕分け変更後も維持）
+        if selected_sort_col != sort_col_options[0] and len(tab1_df) > 0:
+            is_asc = ("昇順" in selected_sort_dir)
+            numeric_sort_map = {
+                "💰 1株価格": "株価(円)",
+                "💴 単元株(100株)": "単元購入額(万円)",
+                "🚀 売上成長率": "売上高成長率(%)",
+                "🏢 時価総額": "時価総額(億円)",
+                "👑 オーナー保有率": "インサイダー保有率(%)",
+                "🔻 高値比下落": "高値下落率(%)",
+                "📊 PER": "PER",
+            }
+            if selected_sort_col == "📈 エントリー判定 (FX目線)" and "エントリー判定" in tab1_df.columns:
+                tab1_df["_sort_key"] = tab1_df["エントリー判定"].map(calc_entry_score)
+                tab1_df = tab1_df.sort_values(by="_sort_key", ascending=is_asc, kind="mergesort", na_position="last").drop(columns=["_sort_key"])
+            elif selected_sort_col == "🏷️ 仕分け (⭐️監/⚪未/❌除)" and "仕分け" in tab1_df.columns:
+                status_rank_map = {"⭐️監": 1, "⚪未": 2, "❌除": 3}
+                tab1_df["_sort_key"] = tab1_df["仕分け"].map(lambda v: status_rank_map.get(str(v), 9))
+                tab1_df = tab1_df.sort_values(by="_sort_key", ascending=is_asc, kind="mergesort", na_position="last").drop(columns=["_sort_key"])
+            elif selected_sort_col == "🔢 コード" and "コード" in tab1_df.columns:
+                tab1_df["_sort_key"] = tab1_df["コード"].astype(str)
+                tab1_df = tab1_df.sort_values(by="_sort_key", ascending=is_asc, kind="mergesort", na_position="last").drop(columns=["_sort_key"])
+            elif selected_sort_col == "📅 直近決算日":
+                raw_col = "決算予定日_生値" if "決算予定日_生値" in tab1_df.columns else "直近決算日"
+                if raw_col in tab1_df.columns:
+                    tab1_df["_sort_key"] = pd.to_numeric(
+                        tab1_df[raw_col].map(lambda v: parse_earnings_alert(v)[2]),
+                        errors="coerce"
+                    )
+                    tab1_df = tab1_df.sort_values(by="_sort_key", ascending=is_asc, kind="mergesort", na_position="last").drop(columns=["_sort_key"])
+            elif selected_sort_col in numeric_sort_map:
+                target_num_col = numeric_sort_map[selected_sort_col]
+                if target_num_col in tab1_df.columns:
+                    tab1_df["_sort_key"] = pd.to_numeric(tab1_df[target_num_col], errors="coerce")
+                    tab1_df = tab1_df.sort_values(by="_sort_key", ascending=is_asc, kind="mergesort", na_position="last").drop(columns=["_sort_key"])
 
         # 一覧テーブルの列構成（パターンA：仕分け ➔ コード（詳細へ） ➔ 銘柄名を左端に集約し、エントリー判定・価格・特徴を配置）
         display_cols = [
@@ -5608,7 +5680,7 @@ with tab1:
 
                 st.caption("💡 **「コード（詳細へ）」** のセルを1タップすると詳細分析画面が開きます。左端 **「仕分け」** のセルをタップすると **【⚪未 ➔ ⭐️監 ➔ ❌除】** がワンタップで切り替わります。")
 
-                table_key = f"df_select_all_{st.session_state.editor_version}_{len(tab1_df)}_{status_filter}_{selected_smart_view}"
+                table_key = f"df_select_all_{st.session_state.editor_version}_{len(tab1_df)}_{status_filter}_{selected_smart_view}_{selected_sort_col}_{selected_sort_dir}"
                 st.markdown('<div class="table-scroll-container">', unsafe_allow_html=True)
                 selection_event = st.dataframe(
                     style_code_column(display_df, prefix_icon="🔍"),

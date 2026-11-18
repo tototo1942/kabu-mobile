@@ -2002,13 +2002,47 @@ def save_current_conditions():
 
 
 # ==========================================
-# 🌐 ハイブリッド型マルチユーザーデータ分離 ＆ 永続化エンジン
-# // MAINTENANCE_REQUIRED: ユーザー分離・個別ファイルパス生成ロジックはここを保守してください
+# 🌐 ハイブリッド型マルチユーザーデータ分離 ＆ Firebase Firestore 永続化エンジン
+# // MAINTENANCE_REQUIRED: ユーザー分離・Firebase Firestore接続・個別ファイルパス生成ロジックはここを保守してください
 # ==========================================
 import uuid
 
+@st.cache_resource
+def get_firestore_db():
+    """Streamlit Secrets に Firebase サービスアカウントが設定されていれば Firestore クライアントを返す（未設定時は None）"""
+    try:
+        import firebase_admin
+        from firebase_admin import credentials, firestore
+    except Exception:
+        return None
+
+    try:
+        raw_cred = None
+        for sec_key in ("firebase_service_account", "firebase"):
+            if sec_key in st.secrets:
+                raw_cred = st.secrets[sec_key]
+                break
+        if not raw_cred:
+            return None
+
+        if isinstance(raw_cred, str):
+            cred_dict = json.loads(raw_cred)
+        else:
+            cred_dict = dict(raw_cred)
+
+        if "private_key" in cred_dict and isinstance(cred_dict["private_key"], str):
+            cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+
+        if not firebase_admin._apps:
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+        return firestore.client()
+    except Exception:
+        return None
+
+
 def get_current_user_id() -> str:
-    """現在のアクティブユーザーID（マイ合言葉）を取得・生成"""
+    """現在のアクティブユーザーID（マイ合言葉）を取得・生成（LocalStorage復元を阻害しないようquery_paramsへの自動書き込みは行わない）"""
     # 1. URLクエリパラメータ(?uid=xxx)からの取得
     query_uid = st.query_params.get("uid")
     if query_uid:
@@ -2016,19 +2050,16 @@ def get_current_user_id() -> str:
         if clean_uid:
             st.session_state["user_id"] = clean_uid
             return clean_uid
-            
+
     # 2. セッションステートからの取得
     if "user_id" in st.session_state and st.session_state["user_id"]:
         return st.session_state["user_id"]
-        
-    # 3. 新規自動発行 (例: u_a1b2c3d4)
+
+    # 3. 仮の新規IDを発行（URLにはまだ書かず、下のJSでLocalStorageに旧IDがあれば優先復元させる）
     new_uid = f"u_{uuid.uuid4().hex[:8]}"
     st.session_state["user_id"] = new_uid
-    try:
-        st.query_params["uid"] = new_uid
-    except Exception:
-        pass
     return new_uid
+
 
 def get_user_file_path(prefix: str) -> str:
     """ユーザーごとの独立したJSONファイルパスを安全に生成"""
@@ -2037,35 +2068,85 @@ def get_user_file_path(prefix: str) -> str:
     os.makedirs(USER_DATA_DIR, exist_ok=True)
     return os.path.join(USER_DATA_DIR, f"{prefix}_{clean_uid}.json")
 
-def load_stock_status():
-    """銘柄の仕分けステータスをユーザー個別ファイルから読み込む"""
-    user_file = get_user_file_path("stock_status")
+
+def _load_user_json_data(prefix: str, seed_file: str, default_value):
+    """Firestore（優先）またはローカル個別ファイルからユーザーデータを読み込む"""
+    uid = get_current_user_id()
+    clean_uid = re.sub(r"[^a-zA-Z0-9_\-]", "", uid)[:32] or "default"
+    db = get_firestore_db()
+
+    # 1. Firebase Firestore からの読み込み
+    if db is not None:
+        try:
+            doc = db.collection("kabu_users").document(clean_uid).get()
+            if doc.exists:
+                doc_data = doc.to_dict() or {}
+                if prefix in doc_data and doc_data[prefix] is not None:
+                    raw_val = doc_data[prefix]
+                    return json.loads(raw_val) if isinstance(raw_val, str) else raw_val
+        except Exception:
+            pass
+
+    # 2. ローカル個別ファイルからの読み込み
+    user_file = get_user_file_path(prefix)
     if os.path.exists(user_file):
         try:
             with open(user_file, "r", encoding="utf-8") as f:
-                return json.load(f)
+                loaded_local = json.load(f)
+                if db is not None:
+                    _save_user_json_data(prefix, loaded_local)
+                return loaded_local
         except Exception:
             pass
-    # ユーザー固有ファイルが存在しない初回は、ベーステンプレートから安全に初期シード作成
-    if os.path.exists(STATUS_FILE):
+
+    # 3. 初回アクセス時はシードファイルから初期構築し、永続化先に保存
+    if seed_file and os.path.exists(seed_file):
         try:
-            with open(STATUS_FILE, "r", encoding="utf-8") as f:
+            with open(seed_file, "r", encoding="utf-8") as f:
                 seed_data = json.load(f)
-                save_stock_status(seed_data)
+                _save_user_json_data(prefix, seed_data)
                 return seed_data
         except Exception:
             pass
-    return {}
 
-def save_stock_status(data):
-    """銘柄の仕分けステータスをユーザー個別ファイルへ永続保存"""
-    st.session_state.stock_status = data
-    user_file = get_user_file_path("stock_status")
+    return default_value
+
+
+def _save_user_json_data(prefix: str, data):
+    """ユーザーデータをローカルファイルおよび Firebase Firestore へ永続保存"""
+    user_file = get_user_file_path(prefix)
     try:
         with open(user_file, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception:
         pass
+
+    db = get_firestore_db()
+    if db is not None:
+        try:
+            from firebase_admin import firestore as fs_module
+            uid = get_current_user_id()
+            clean_uid = re.sub(r"[^a-zA-Z0-9_\-]", "", uid)[:32] or "default"
+            db.collection("kabu_users").document(clean_uid).set(
+                {
+                    prefix: json.dumps(data, ensure_ascii=False),
+                    "updated_at": fs_module.SERVER_TIMESTAMP,
+                },
+                merge=True,
+            )
+        except Exception:
+            pass
+
+
+def load_stock_status():
+    """銘柄の仕分けステータスを永続ストレージから読み込む"""
+    return _load_user_json_data("stock_status", STATUS_FILE, {})
+
+
+def save_stock_status(data):
+    """銘柄の仕分けステータスを永続ストレージへ保存"""
+    st.session_state.stock_status = data
+    _save_user_json_data("stock_status", data)
 
 def set_stock_status(code: str, status: str, watch_price=None, target_price=None, scenario_tag="__UNSET__"):
     """銘柄のステータス（watching / excluded / unreviewed）および監視情報（開始株価、目標株価、シナリオタグ）を更新して即時保存"""
@@ -2107,62 +2188,25 @@ def set_stock_status(code: str, status: str, watch_price=None, target_price=None
     save_stock_status(st.session_state.stock_status)
 
 def load_watchlist():
-    """保有株リストをユーザー個別ファイルから読み込む"""
-    user_file = get_user_file_path("watchlist")
-    if os.path.exists(user_file):
-        try:
-            with open(user_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    if os.path.exists(WATCHLIST_FILE):
-        try:
-            with open(WATCHLIST_FILE, "r", encoding="utf-8") as f:
-                seed_data = json.load(f)
-                save_watchlist(seed_data)
-                return seed_data
-        except Exception:
-            pass
-    return []
+    """保有株リストを永続ストレージから読み込む"""
+    return _load_user_json_data("watchlist", WATCHLIST_FILE, [])
+
 
 def save_watchlist(data):
-    """保有株リストをユーザー個別ファイルへ永続保存"""
+    """保有株リストを永続ストレージへ保存"""
     st.session_state.my_watchlist = data
-    user_file = get_user_file_path("watchlist")
-    try:
-        with open(user_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    _save_user_json_data("watchlist", data)
+
 
 def load_stock_notes():
-    """投資メモをユーザー個別ファイルから読み込む"""
-    user_file = get_user_file_path("stock_notes")
-    if os.path.exists(user_file):
-        try:
-            with open(user_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    if os.path.exists(NOTES_FILE):
-        try:
-            with open(NOTES_FILE, "r", encoding="utf-8") as f:
-                seed_data = json.load(f)
-                save_stock_notes(seed_data)
-                return seed_data
-        except Exception:
-            pass
-    return {}
+    """投資メモを永続ストレージから読み込む"""
+    return _load_user_json_data("stock_notes", NOTES_FILE, {})
+
 
 def save_stock_notes(data):
-    """投資メモをユーザー個別ファイルへ永続保存"""
+    """投資メモを永続ストレージへ保存"""
     st.session_state.stock_notes = data
-    user_file = get_user_file_path("stock_notes")
-    try:
-        with open(user_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
+    _save_user_json_data("stock_notes", data)
 
 def save_stock_note_entry(code: str, note_text: str):
     """指定銘柄のメモと現在日時を更新して保存"""
@@ -2189,14 +2233,17 @@ st.components.v1.html(f"""
         const storedUid = window.localStorage.getItem('tototo_user_uid');
 
         if (!queryUid && storedUid) {{
-            // URLにuidがない場合、ブラウザ記憶のIDを自動付与してマイリストを完全復元！
+            // URLにuidがない場合、ブラウザ記憶のIDを優先してURLに付与・復元（新規IDでの上書きを防止）
             url.searchParams.set('uid', storedUid);
             window.parent.location.replace(url.toString());
         }} else if (queryUid) {{
             // URLにuidがある場合、次回のためにブラウザLocalStorageへ記憶！
             window.localStorage.setItem('tototo_user_uid', queryUid);
         }} else if ('{cur_active_uid}') {{
+            // 完全初回のみ新規発行IDを記憶し、ブックマーク用にURLへ反映
             window.localStorage.setItem('tototo_user_uid', '{cur_active_uid}');
+            url.searchParams.set('uid', '{cur_active_uid}');
+            window.parent.history.replaceState(null, '', url.toString());
         }}
     }} catch (e) {{
         // cross-origin ignore
@@ -5748,10 +5795,16 @@ with tab2:
         st.markdown("### 💼 ポートフォリオ ＆ 銘柄ウォッチ管理")
 
         # 🔑 マイ合言葉・端末同期設定（他端末での同期やID引き継ぎ）
-        with st.expander(f"🔑 マイ合言葉・端末間同期 （現在のユーザーID: {cur_active_uid}）", expanded=False):
+        is_firebase_active = (get_firestore_db() is not None)
+        storage_badge = "☁️ Firebase保存" if is_firebase_active else "⚠️ ローカル一時保存"
+        with st.expander(f"🔑 マイ合言葉・端末間同期 （ID: {cur_active_uid} ｜ {storage_badge}）", expanded=False):
+            if is_firebase_active:
+                st.success("☁️ **Firebase Firestore クラウド保存が有効です**：監視リスト・保有株・メモはクラウドへ自動保存され、翌日やアプリ更新後も消えません。")
+            else:
+                st.warning("⚠️ **現在はローカル一時保存モードです**：Streamlit Cloud の Secrets に `firebase_service_account` が設定されていないため、サーバー再起動時にデータが初期化されます。")
             st.markdown("##### 📱 複数端末（スマホとPC）でのデータ同期")
-            st.caption("あなた専用の監視リストと保有株は、ブラウザのキャッシュ（LocalStorage）と個別の保存ファイルに安全に保護されています。ブラウザを閉じても消えることはありません。")
-            st.code(f"現在のマイ合言葉: {cur_active_uid}", language=None)
+            st.caption("合言葉を切り替えた後は、URL末尾に `?uid=あなたの合言葉` が付いた状態のページをスマホ・PCそれぞれでブックマーク（お気に入り登録）しておくと、IDが絶対に変わらず同じリストを開けます。")
+            st.code(f"現在のマイ合言葉: {cur_active_uid}   （専用URLパラメータ: ?uid={cur_active_uid}）", language=None)
             
             sync_col1, sync_col2 = st.columns([3.2, 1.2])
             with sync_col1:

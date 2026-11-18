@@ -434,3 +434,14 @@ git push -u origin main
   - 安定ソート（`mergesort`）かつ欠損値末尾配置（`na_position="last"`）により、一覧上で `⚪未 / ⭐️監 / ❌除` を連続切替しても、詳細画面から戻っても並び順が確実に維持される。
 * **コード保守マーキング**:
   - `kabu-mobile/app.py` 内に `// MAINTENANCE_REQUIRED: 永続ソート項目を追加・変更する際は以下の選択肢とソートマッピングを併せて更新してください` を配備。
+
+### ㉒ Firebase Firestore クラウド永続化対応 ＆ ユーザーID上書きバグ修正（2026/11/18）
+* **背景・課題の解決**:
+  - Streamlit Community Cloud のコンテナ再起動・スリープ復帰時に `user_data/*.json` が初期化されて監視リストがシード（`3560` の1件）に戻る問題を解消するため、Google Firebase（Cloud Firestore）を永続ストレージとして統合。
+  - また、URLに `?uid=` がない状態でアクセスした際に `get_current_user_id()` が先に新しい `uid` を `st.query_params` へ書き込んでしまい、JavaScript の `LocalStorage` 復元ロジックが旧IDを上書き破壊していたバグを修正。
+* **主な実装内容**:
+  - `requirements.txt` に `firebase-admin>=6.2.0` を追加。
+  - `get_firestore_db()` を新設し、`st.secrets["firebase_service_account"]`（または `firebase`）設定時は自動で Firestore コレクション `kabu_users/{uid}` へ `stock_status` / `watchlist` / `stock_notes` を自動保存・復元（Secrets未設定環境では従来のローカルJSONへ安全にフォールバック）。
+  - タブ2の「🔑 マイ合言葉・端末間同期」に Firebase 接続ステータスバッジと `?uid=` 付きブックマーク推奨案内を表示。
+* **コード保守マーキング**:
+  - `kabu-mobile/app.py` 内に `// MAINTENANCE_REQUIRED: ユーザー分離・Firebase Firestore接続・個別ファイルパス生成ロジックはここを保守してください` を配備。
